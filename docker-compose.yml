@@ -1,0 +1,27 @@
+services:
+  key-ceremony:
+    build: .
+    container_name: key-ceremony
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - RP_NAME=Key Ceremony
+      - RP_ID=ceremony.dpinkerton.com
+      - RP_ORIGIN=https://ceremony.dpinkerton.com
+      - DB_PATH=/data/key-ceremony.db
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - BTCPAY_URL=https://btcpay.dpinkerton.com
+      - BTCPAY_STORE_ID=${BTCPAY_STORE_ID}
+      - BTCPAY_API_KEY=${BTCPAY_API_KEY}
+      - BTCPAY_WEBHOOK_SECRET=${BTCPAY_WEBHOOK_SECRET}
+    volumes:
+      - key-ceremony-data:/data
+    networks:
+      - caddy_rev-proxy
+
+volumes:
+  key-ceremony-data:
+
+networks:
+  caddy_rev-proxy:
+    external: true

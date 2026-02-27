@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Key Ceremony Record — {{CEREMONY_REFERENCE}}</title>
+<style>
+  :root {
+    --accent: #F7931A;
+    --success: #22c55e;
+    --danger: #ef4444;
+    --text: #1a1a1a;
+    --text-muted: #666;
+    --border: #ddd;
+    --bg-light: #f8f8f8;
+  }
+
+  @page {
+    size: A4;
+    margin: 20mm 18mm 22mm 18mm;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 10pt;
+    line-height: 1.5;
+    color: var(--text);
+  }
+
+  .page-break {
+    page-break-before: always;
+    padding-top: 8mm;
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 4mm;
+    margin-bottom: 6mm;
+    border-bottom: 2px solid var(--accent);
+  }
+
+  .page-header .title {
+    font-size: 11pt;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .page-header .ref {
+    font-size: 9pt;
+    color: var(--text-muted);
+    font-family: monospace;
+  }
+
+  /* Cover page */
+  .cover {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 85vh;
+    text-align: center;
+  }
+
+  .cover h1 {
+    font-size: 28pt;
+    color: var(--accent);
+    margin-bottom: 4mm;
+    letter-spacing: -0.5px;
+  }
+
+  .cover .subtitle {
+    font-size: 14pt;
+    color: var(--text-muted);
+    margin-bottom: 16mm;
+  }
+
+  .cover-details {
+    width: 70%;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6mm;
+    text-align: left;
+  }
+
+  .cover-details dl {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 3mm 4mm;
+  }
+
+  .cover-details dt {
+    color: var(--text-muted);
+    font-size: 9pt;
+  }
+
+  .cover-details dd {
+    font-weight: 600;
+  }
+
+  .cover-details dd code {
+    font-size: 7.5pt;
+    word-break: break-all;
+    font-weight: 400;
+  }
+
+  .cover-footer {
+    margin-top: 16mm;
+    font-size: 8pt;
+    color: var(--text-muted);
+  }
+
+  /* Section pages */
+  h2 {
+    font-size: 15pt;
+    color: var(--accent);
+    margin-bottom: 4mm;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 2mm;
+  }
+
+  h3 {
+    font-size: 11pt;
+    color: var(--text);
+    margin: 5mm 0 2mm;
+  }
+
+  p, li {
+    font-size: 10pt;
+    line-height: 1.6;
+    color: var(--text);
+    margin-bottom: 2mm;
+  }
+
+  p.small {
+    font-size: 8.5pt;
+    color: var(--text-muted);
+  }
+
+  /* Summary grid */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4mm;
+    margin: 4mm 0;
+  }
+
+  .summary-box {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4mm;
+  }
+
+  .summary-box .label {
+    font-size: 8pt;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 1mm;
+  }
+
+  .summary-box .value {
+    font-size: 14pt;
+    font-weight: 700;
+  }
+
+  .summary-box .value.pass { color: var(--success); }
+  .summary-box .value.fail { color: var(--danger); }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 3mm 0 5mm;
+    font-size: 9pt;
+  }
+
+  th {
+    background: var(--bg-light);
+    border: 1px solid var(--border);
+    padding: 2.5mm 3mm;
+    text-align: left;
+    font-size: 8.5pt;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  td {
+    border: 1px solid var(--border);
+    padding: 2.5mm 3mm;
+    vertical-align: top;
+  }
+
+  td code {
+    font-size: 8pt;
+    background: var(--bg-light);
+    padding: 0.5mm 1.5mm;
+    border-radius: 2px;
+  }
+
+  td.verified {
+    color: var(--success);
+    font-weight: 700;
+  }
+
+  td.not-verified {
+    color: var(--text-muted);
+  }
+
+  /* Recovery section */
+  .recovery dl {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 3mm 4mm;
+    margin: 3mm 0;
+  }
+
+  .recovery dt {
+    color: var(--text-muted);
+    font-size: 9pt;
+    font-weight: 600;
+  }
+
+  .recovery dd {
+    font-size: 9pt;
+  }
+
+  .pre-wrap {
+    white-space: pre-wrap;
+  }
+
+  /* Footer */
+  .doc-footer {
+    margin-top: 10mm;
+    padding-top: 4mm;
+    border-top: 1px solid var(--border);
+    font-size: 7.5pt;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  .no-break {
+    page-break-inside: avoid;
+  }
+</style>
+</head>
+<body>
+
+<!-- Cover Page -->
+<div class="cover">
+  <h1>Key Ceremony Record</h1>
+  <p class="subtitle">Bitcoin Multisig Wallet Documentation</p>
+
+  <div class="cover-details">
+    <dl>
+      <dt>Reference</dt>
+      <dd>{{CEREMONY_REFERENCE}}</dd>
+      <dt>Date</dt>
+      <dd>{{CEREMONY_DATE}}</dd>
+      <dt>Wallet Type</dt>
+      <dd>{{ADDRESS_TYPE}}</dd>
+      <dt>Quorum</dt>
+      <dd>{{QUORUM_REQUIRED}}-of-{{QUORUM_TOTAL}}</dd>
+      <dt>Descriptor Hash</dt>
+      <dd><code>{{DESCRIPTOR_HASH}}</code></dd>
+    </dl>
+  </div>
+
+  <p class="cover-footer">Generated by Key Ceremony &mdash; keyceremony.com</p>
+</div>
+
+<!-- Wallet Summary -->
+<div class="page-break">
+  <div class="page-header">
+    <span class="title">Key Ceremony Record</span>
+    <span class="ref">{{CEREMONY_REFERENCE}}</span>
+  </div>
+
+  <h2>Wallet Summary</h2>
+
+  <div class="summary-grid">
+    <div class="summary-box">
+      <div class="label">Script Type</div>
+      <div class="value">{{ADDRESS_TYPE}}</div>
+    </div>
+    <div class="summary-box">
+      <div class="label">Quorum</div>
+      <div class="value">{{QUORUM_REQUIRED}} of {{QUORUM_TOTAL}}</div>
+    </div>
+    <div class="summary-box">
+      <div class="label">Keys Verified</div>
+      <div class="value">{{KEYS_VERIFIED}}</div>
+    </div>
+    <div class="summary-box">
+      <div class="label">Verification Grade</div>
+      <div class="value {{RATING_CLASS}}">{{RATING}}</div>
+    </div>
+  </div>
+
+  <div class="no-break">
+    <h3>Verification Details</h3>
+    <table>
+      <tbody>
+        <tr><td style="width:140px; color:var(--text-muted)">Challenge Message</td><td><code>{{CHALLENGE}}</code></td></tr>
+        <tr><td style="color:var(--text-muted)">Block Height</td><td>{{BLOCK_HEIGHT}}</td></tr>
+        <tr><td style="color:var(--text-muted)">Network</td><td>{{NETWORK}}</td></tr>
+        <tr><td style="color:var(--text-muted)">Quorum Status</td><td>{{QUORUM_RESULT}} ({{QUORUM_ACHIEVED}} of {{QUORUM_REQUIRED}} required)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="small">The descriptor SHA-256 hash uniquely identifies this wallet configuration. The verification grade reflects how many key holders proved control of their keys by signing a timestamped challenge message.</p>
+</div>
+
+<!-- Key Holders -->
+<div class="page-break">
+  <div class="page-header">
+    <span class="title">Key Ceremony Record</span>
+    <span class="ref">{{CEREMONY_REFERENCE}}</span>
+  </div>
+
+  <h2>Key Holders</h2>
+  <p class="small">Each row represents one key in the wallet descriptor. Key holders were asked to sign a challenge message to prove they control their respective key.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Fingerprint</th>
+        <th>Name</th>
+        <th>Role</th>
+        <th>Device</th>
+        <th>Verified</th>
+      </tr>
+    </thead>
+    <tbody>
+{{KEY_HOLDER_ROWS}}
+    </tbody>
+  </table>
+</div>
+
+<!-- Recovery Procedure -->
+<div class="page-break">
+  <div class="page-header">
+    <span class="title">Key Ceremony Record</span>
+    <span class="ref">{{CEREMONY_REFERENCE}}</span>
+  </div>
+
+  <h2>Recovery Procedure</h2>
+  <p class="small">The following instructions document how to reconstruct this wallet in case of emergency. This information should be stored securely alongside the wallet descriptor.</p>
+
+  <div class="recovery">
+    {{RECOVERY_CONTENT}}
+  </div>
+</div>
+
+<!-- Technical Appendix -->
+<div class="page-break">
+  <div class="page-header">
+    <span class="title">Key Ceremony Record</span>
+    <span class="ref">{{CEREMONY_REFERENCE}}</span>
+  </div>
+
+  <h2>Technical Appendix</h2>
+  <p class="small">Extended public key details for each signer in the wallet descriptor. Full xpubs are truncated for security — the complete descriptor should be stored separately.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Fingerprint</th>
+        <th>Extended Public Key</th>
+        <th>Derivation Path</th>
+      </tr>
+    </thead>
+    <tbody>
+{{TECHNICAL_ROWS}}
+    </tbody>
+  </table>
+
+  <div class="no-break" style="margin-top: 6mm;">
+    <h3>Document Integrity</h3>
+    <table>
+      <tbody>
+        <tr><td style="width:140px; color:var(--text-muted)">Descriptor SHA-256</td><td><code>{{DESCRIPTOR_HASH}}</code></td></tr>
+      </tbody>
+    </table>
+    <p class="small">Verify this document at keyceremony.com/verify using the PDF's SHA-256 hash.</p>
+  </div>
+</div>
+
+<div class="doc-footer">
+  Key Ceremony Record &mdash; {{CEREMONY_REFERENCE}} &mdash; {{CEREMONY_DATE}}<br>
+  Verify at keyceremony.com/verify
+</div>
+
+</body>
+</html>
