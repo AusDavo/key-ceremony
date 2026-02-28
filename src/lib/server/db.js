@@ -139,8 +139,8 @@ export const countCredentialsByUser = db.prepare(`
 
 // Ceremonies
 export const insertCeremony = db.prepare(`
-  INSERT INTO ceremonies (ceremony_id, user_id, ceremony_date, document_hash, encrypted_metadata, metadata_iv)
-  VALUES (?, ?, ?, ?, ?, ?)
+  INSERT INTO ceremonies (ceremony_id, user_id, ceremony_date, descriptor_hash, document_hash, encrypted_metadata, metadata_iv)
+  VALUES (?, ?, ?, '', ?, ?, ?)
 `);
 
 export const getCeremonyByHash = db.prepare(`
