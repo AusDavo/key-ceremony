@@ -13,21 +13,17 @@ const ROLE_OPTIONS = [
 
 export function load({ locals }) {
 	const { user } = locals;
-	if (!canAccessStep(user.workflow_state, 'descriptor')) {
-		throw redirect(303, '/ceremony/descriptor');
+	if (!canAccessStep(user.workflow_state, 'setup')) {
+		throw redirect(303, '/ceremony/setup');
 	}
 
 	const data = getWorkflowData(user);
-	const parsed = data.descriptorParsed;
+	const config = data.walletConfig;
 
 	return {
-		xpubs: parsed.xpubs.map((x, i) => ({
-			fingerprint: x.xpubFingerprint,
-			path: x.path,
-			xpubPreview: `${x.xpub.slice(0, 16)}...${x.xpub.slice(-8)}`
-		})),
-		quorum: parsed.quorum,
-		addressTypeLabel: parsed.addressTypeLabel,
+		keyCount: config.keyCount,
+		quorumRequired: config.quorumRequired,
+		walletType: config.walletType,
 		savedKeyHolders: data.keyHolders || null,
 		deviceTypes: DEVICE_TYPES,
 		roleOptions: ROLE_OPTIONS
@@ -52,24 +48,22 @@ export const actions = {
 		}
 
 		const data = getWorkflowData(user);
-		const parsed = data.descriptorParsed;
+		const keyCount = data.walletConfig.keyCount;
 
 		// Validate each key has at least one holder with a name
-		for (let i = 0; i < parsed.xpubs.length; i++) {
+		for (let i = 0; i < keyCount; i++) {
 			const holders = keyHolders[i];
 			if (!holders) {
 				return fail(400, {
-					error: `Please enter a name for Key ${i + 1} (${parsed.xpubs[i].xpubFingerprint}).`
+					error: `Please enter a name for Key ${i + 1}.`
 				});
 			}
-			// Support both array format and legacy single-holder format
 			const holderList = Array.isArray(holders) ? holders : [holders];
 			if (holderList.length === 0 || !holderList[0].name || !holderList[0].name.trim()) {
 				return fail(400, {
-					error: `Please enter a name for Key ${i + 1} (${parsed.xpubs[i].xpubFingerprint}).`
+					error: `Please enter a name for Key ${i + 1}.`
 				});
 			}
-			// Normalize to array format
 			keyHolders[i] = holderList;
 		}
 
@@ -81,6 +75,6 @@ export const actions = {
 			user.workflow_state
 		);
 
-		throw redirect(303, '/ceremony/verification');
+		throw redirect(303, '/ceremony/recovery');
 	}
 };

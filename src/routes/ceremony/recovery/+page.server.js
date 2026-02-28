@@ -3,18 +3,17 @@ import { getWorkflowData, saveWorkflowData, canAccessStep } from '$lib/server/wo
 
 export function load({ locals }) {
 	const { user } = locals;
-	if (!canAccessStep(user.workflow_state, 'verified')) {
-		throw redirect(303, '/ceremony/verification');
+	if (!canAccessStep(user.workflow_state, 'key_holders')) {
+		throw redirect(303, '/ceremony/key-holders');
 	}
 
 	const data = getWorkflowData(user);
-	const parsed = data.descriptorParsed;
+	const config = data.walletConfig;
 
 	return {
-		quorum: parsed.quorum,
-		addressTypeLabel: parsed.addressTypeLabel,
-		addressType: parsed.addressType,
-		xpubCount: parsed.xpubs.length,
+		quorumRequired: config.quorumRequired,
+		keyCount: config.keyCount,
+		walletType: config.walletType,
 		savedRecovery: data.recoveryInstructions || null
 	};
 }

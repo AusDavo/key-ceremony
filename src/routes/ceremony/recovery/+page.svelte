@@ -13,12 +13,12 @@
 
 <div class="wallet-context">
 	<dl>
-		<dt>Wallet Type</dt>
-		<dd>{data.addressTypeLabel}</dd>
-		{#if data.quorum}
-			<dt>Quorum</dt>
-			<dd>{data.quorum.required} of {data.quorum.total} keys required</dd>
+		{#if data.walletType}
+			<dt>Wallet Type</dt>
+			<dd>{data.walletType}</dd>
 		{/if}
+		<dt>Quorum</dt>
+		<dd>{data.quorumRequired} of {data.keyCount} keys required</dd>
 	</dl>
 </div>
 
@@ -49,7 +49,7 @@
 		<label>
 			<span>Step-by-step instructions</span>
 			<textarea name="emergencySteps" bind:value={emergencySteps} rows="6"
-				placeholder="1. Install Sparrow Wallet on a secure computer&#10;2. Go to File > Import Wallet&#10;3. Paste the output descriptor from [location]&#10;4. Verify the wallet addresses match&#10;5. Connect hardware wallets to sign transactions&#10;6. At least {data.quorum?.required || 1} of {data.quorum?.total || data.xpubCount} keys must sign each transaction"></textarea>
+				placeholder="1. Install Sparrow Wallet on a secure computer&#10;2. Go to File > Import Wallet&#10;3. Paste the output descriptor from [location]&#10;4. Verify the wallet addresses match&#10;5. Connect hardware wallets to sign transactions&#10;6. At least {data.quorumRequired} of {data.keyCount} keys must sign each transaction"></textarea>
 		</label>
 	</div>
 

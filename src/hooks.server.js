@@ -4,7 +4,7 @@ import { startPurgeScheduler } from '$lib/server/purge.js';
 
 startPurgeScheduler();
 
-const PROTECTED_PATHS = ['/ceremony', '/vault', '/settings'];
+const PROTECTED_PATHS = ['/ceremony', '/settings'];
 
 export async function handle({ event, resolve }) {
 	const userId = event.cookies.get('user_id');

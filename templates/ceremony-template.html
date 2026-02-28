@@ -6,8 +6,6 @@
 <style>
   :root {
     --accent: #F7931A;
-    --success: #22c55e;
-    --danger: #ef4444;
     --text: #1a1a1a;
     --text-muted: #666;
     --border: #ddd;
@@ -100,12 +98,6 @@
     font-weight: 600;
   }
 
-  .cover-details dd code {
-    font-size: 7.5pt;
-    word-break: break-all;
-    font-weight: 400;
-  }
-
   .cover-footer {
     margin-top: 16mm;
     font-size: 8pt;
@@ -166,9 +158,6 @@
     font-weight: 700;
   }
 
-  .summary-box .value.pass { color: var(--success); }
-  .summary-box .value.fail { color: var(--danger); }
-
   /* Tables */
   table {
     width: 100%;
@@ -199,15 +188,6 @@
     background: var(--bg-light);
     padding: 0.5mm 1.5mm;
     border-radius: 2px;
-  }
-
-  td.verified {
-    color: var(--success);
-    font-weight: 700;
-  }
-
-  td.not-verified {
-    color: var(--text-muted);
   }
 
   /* Recovery section */
@@ -261,11 +241,9 @@
       <dt>Date</dt>
       <dd>{{CEREMONY_DATE}}</dd>
       <dt>Wallet Type</dt>
-      <dd>{{ADDRESS_TYPE}}</dd>
+      <dd>{{WALLET_TYPE}}</dd>
       <dt>Quorum</dt>
       <dd>{{QUORUM_REQUIRED}}-of-{{QUORUM_TOTAL}}</dd>
-      <dt>Descriptor Hash</dt>
-      <dd><code>{{DESCRIPTOR_HASH}}</code></dd>
     </dl>
   </div>
 
@@ -283,36 +261,16 @@
 
   <div class="summary-grid">
     <div class="summary-box">
-      <div class="label">Script Type</div>
-      <div class="value">{{ADDRESS_TYPE}}</div>
+      <div class="label">Wallet Type</div>
+      <div class="value">{{WALLET_TYPE}}</div>
     </div>
     <div class="summary-box">
       <div class="label">Quorum</div>
       <div class="value">{{QUORUM_REQUIRED}} of {{QUORUM_TOTAL}}</div>
     </div>
-    <div class="summary-box">
-      <div class="label">Keys Verified</div>
-      <div class="value">{{KEYS_VERIFIED}}</div>
-    </div>
-    <div class="summary-box">
-      <div class="label">Verification Grade</div>
-      <div class="value {{RATING_CLASS}}">{{RATING}}</div>
-    </div>
   </div>
 
-  <div class="no-break">
-    <h3>Verification Details</h3>
-    <table>
-      <tbody>
-        <tr><td style="width:140px; color:var(--text-muted)">Challenge Message</td><td><code>{{CHALLENGE}}</code></td></tr>
-        <tr><td style="color:var(--text-muted)">Block Height</td><td>{{BLOCK_HEIGHT}}</td></tr>
-        <tr><td style="color:var(--text-muted)">Network</td><td>{{NETWORK}}</td></tr>
-        <tr><td style="color:var(--text-muted)">Quorum Status</td><td>{{QUORUM_RESULT}} ({{QUORUM_ACHIEVED}} of {{QUORUM_REQUIRED}} required)</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <p class="small">The descriptor SHA-256 hash uniquely identifies this wallet configuration. The verification grade reflects how many key holders proved control of their keys by signing a timestamped challenge message.</p>
+  <p class="small">This document records the setup of a Bitcoin multisig wallet, including key holder details, storage locations, and recovery procedures. It should be stored securely alongside the wallet output descriptor.</p>
 </div>
 
 <!-- Key Holders -->
@@ -323,7 +281,7 @@
   </div>
 
   <h2>Key Holders</h2>
-  <p class="small">Each row represents one key in the wallet descriptor. Key holders were asked to sign a challenge message to prove they control their respective key.</p>
+  <p class="small">Each row represents one key in the multisig wallet and the person or entity responsible for it.</p>
 
   <table>
     <thead>
@@ -332,7 +290,6 @@
         <th>Name</th>
         <th>Role</th>
         <th>Device</th>
-        <th>Verified</th>
       </tr>
     </thead>
     <tbody>
@@ -369,41 +326,6 @@
 
   <div class="recovery">
     {{RECOVERY_CONTENT}}
-  </div>
-</div>
-
-<!-- Technical Appendix -->
-<div class="page-break">
-  <div class="page-header">
-    <span class="title">Key Ceremony Record</span>
-    <span class="ref">{{CEREMONY_REFERENCE}}</span>
-  </div>
-
-  <h2>Technical Appendix</h2>
-  <p class="small">Extended public key details for each signer in the wallet descriptor. Full xpubs are truncated for security — the complete descriptor should be stored separately.</p>
-
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Fingerprint</th>
-        <th>Extended Public Key</th>
-        <th>Derivation Path</th>
-      </tr>
-    </thead>
-    <tbody>
-{{TECHNICAL_ROWS}}
-    </tbody>
-  </table>
-
-  <div class="no-break" style="margin-top: 6mm;">
-    <h3>Document Integrity</h3>
-    <table>
-      <tbody>
-        <tr><td style="width:140px; color:var(--text-muted)">Descriptor SHA-256</td><td><code>{{DESCRIPTOR_HASH}}</code></td></tr>
-      </tbody>
-    </table>
-    <p class="small">Verify this document at keyceremony.com/verify using the PDF's SHA-256 hash.</p>
   </div>
 </div>
 

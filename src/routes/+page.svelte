@@ -30,7 +30,7 @@
 
 			const result = await verifyResp.json();
 			if (result.verified) {
-				window.location.href = '/ceremony/descriptor';
+				window.location.href = '/ceremony/setup';
 			} else {
 				error = result.error || 'Registration failed';
 			}
@@ -61,7 +61,7 @@
 
 			const result = await verifyResp.json();
 			if (result.verified) {
-				window.location.href = result.redirectTo || '/ceremony/descriptor';
+				window.location.href = result.redirectTo || '/ceremony/setup';
 			} else {
 				error = result.error || 'Login failed';
 			}
@@ -77,28 +77,28 @@
 	<h1>Key Ceremony</h1>
 	<p class="tagline">Document your Bitcoin multisig wallet setup</p>
 
-	<p class="description">Guide your key holders through a structured ceremony. Verify each signer can access their key, document recovery procedures, and generate a professional ceremony record PDF. Free and open source.</p>
+	<p class="description">Document your Bitcoin multisig wallet setup. Record who holds each key, where devices and backups are stored, and how to recover. Generate a professional ceremony record PDF. Free and open source.</p>
 
 	<div class="steps">
 		<div class="step">
 			<div class="step-number">1</div>
-			<h3>Describe your wallet</h3>
-			<p>Paste or scan your wallet output descriptor</p>
+			<h3>Set up your wallet</h3>
+			<p>Enter your key count and quorum</p>
 		</div>
 		<div class="step">
 			<div class="step-number">2</div>
-			<h3>Identify & verify keys</h3>
-			<p>Name each key holder and prove they can sign</p>
+			<h3>Document key holders</h3>
+			<p>Record who holds each key and where</p>
 		</div>
 		<div class="step">
 			<div class="step-number">3</div>
 			<h3>Get your record</h3>
-			<p>Document recovery steps and download a ceremony PDF</p>
+			<p>Add recovery steps and download a ceremony PDF</p>
 		</div>
 	</div>
 
 	<div class="privacy">
-		<p>Never asks for seed phrases or private keys. All data encrypted at rest (AES-256-GCM). Vault entries use zero-knowledge encryption — the server cannot decrypt them. No tracking, no analytics, no third-party scripts. <a href="https://github.com/AusDavo/key-ceremony">Open source</a> and self-hostable.</p>
+		<p>No wallet descriptor, seed phrases, or private keys are entered. No sensitive wallet data touches the server. All data encrypted at rest. No tracking, no analytics, no third-party scripts. <a href="https://github.com/AusDavo/key-ceremony">Open source</a> and self-hostable.</p>
 	</div>
 
 	<div class="features">

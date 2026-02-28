@@ -13,7 +13,7 @@ export const actions = {
 		const ceremony = getCeremonyByHash.get(hash);
 
 		if (ceremony) {
-			// Decrypt metadata if available (new format)
+			// Decrypt metadata if available
 			if (ceremony.encrypted_metadata && ceremony.metadata_iv) {
 				const metadata = decryptForUser(ceremony.encrypted_metadata, ceremony.metadata_iv, ceremony.user_id);
 				return {
@@ -21,8 +21,7 @@ export const actions = {
 					ceremonyReference: ceremony.ceremony_id,
 					ceremonyDate: metadata.ceremonyDate,
 					quorumRequired: metadata.quorumRequired,
-					quorumTotal: metadata.quorumTotal,
-					quorumAchieved: metadata.quorumAchieved
+					quorumTotal: metadata.quorumTotal
 				};
 			}
 
@@ -32,8 +31,7 @@ export const actions = {
 				ceremonyReference: ceremony.ceremony_id,
 				ceremonyDate: ceremony.ceremony_date,
 				quorumRequired: ceremony.quorum_required,
-				quorumTotal: ceremony.quorum_total,
-				quorumAchieved: ceremony.quorum_achieved
+				quorumTotal: ceremony.quorum_total
 			};
 		}
 

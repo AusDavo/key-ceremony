@@ -3,16 +3,6 @@
 
 	let { data, form } = $props();
 	let generating = $state(false);
-
-	function computeRating() {
-		const q = data.descriptorParsed.quorum;
-		if (!q) return 'A+';
-		if (data.quorumAchieved >= q.total) return 'A+';
-		if (data.quorumAchieved >= q.required) return 'A';
-		return 'F';
-	}
-
-	const rating = computeRating();
 </script>
 
 <h2>Review & Generate</h2>
@@ -26,17 +16,15 @@
 	<div class="review-card">
 		<div class="card-header">
 			<h3>Wallet Setup</h3>
-			<a href="/ceremony/descriptor" class="edit-link">Edit</a>
+			<a href="/ceremony/setup" class="edit-link">Edit</a>
 		</div>
 		<dl>
-			<dt>Script Type</dt>
-			<dd>{data.descriptorParsed.addressTypeLabel}</dd>
-			{#if data.descriptorParsed.quorum}
-				<dt>Quorum</dt>
-				<dd>{data.descriptorParsed.quorum.required}-of-{data.descriptorParsed.quorum.total}</dd>
+			{#if data.walletConfig.walletType}
+				<dt>Wallet Type</dt>
+				<dd>{data.walletConfig.walletType}</dd>
 			{/if}
-			<dt>Keys</dt>
-			<dd>{data.descriptorParsed.xpubs.length}</dd>
+			<dt>Quorum</dt>
+			<dd>{data.walletConfig.quorumRequired}-of-{data.walletConfig.keyCount}</dd>
 		</dl>
 	</div>
 
@@ -46,49 +34,25 @@
 			<a href="/ceremony/key-holders" class="edit-link">Edit</a>
 		</div>
 		<div class="keyholder-list">
-			{#each data.descriptorParsed.xpubs as xpub, i}
+			{#each Array.from({ length: data.walletConfig.keyCount }) as _, i}
 				{@const holders = Array.isArray(data.keyHolders[i]) ? data.keyHolders[i] : data.keyHolders[i] ? [data.keyHolders[i]] : [{ name: 'Unknown' }]}
-				{@const signed = data.signatures.includes(String(i))}
 				{#each holders as holder, j}
 					<div class="keyholder-row">
 						{#if j === 0}
-							<span class="kh-fingerprint">{xpub.xpubFingerprint}</span>
+							<span class="kh-key">Key {i + 1}</span>
 						{:else}
-							<span class="kh-fingerprint"></span>
+							<span class="kh-key"></span>
 						{/if}
 						<span class="kh-name">{holder.name || 'Unknown'}</span>
 						<span class="kh-role">{holder.role === 'Custom' ? holder.customRole : holder.role || ''}</span>
 						<span class="kh-device">{holder.deviceType || ''}</span>
-						{#if j === 0}
-							{#if signed}
-								<span class="kh-verified">Verified</span>
-							{:else}
-								<span class="kh-unverified">Not verified</span>
-							{/if}
+						{#if holder.fingerprint}
+							<span class="kh-fingerprint">{holder.fingerprint}</span>
 						{/if}
 					</div>
 				{/each}
 			{/each}
 		</div>
-	</div>
-
-	<div class="review-card">
-		<div class="card-header">
-			<h3>Verification</h3>
-			<a href="/ceremony/verification" class="edit-link">Edit</a>
-		</div>
-		<dl>
-			<dt>Challenge</dt>
-			<dd><code>{data.challenge}</code></dd>
-			<dt>Block Height</dt>
-			<dd>{data.blockHeight?.toLocaleString()}</dd>
-			<dt>Keys Verified</dt>
-			<dd>{data.quorumAchieved} of {data.descriptorParsed.xpubs.length}</dd>
-			<dt>Grade</dt>
-			<dd>
-				<span class="grade" class:pass={rating !== 'F'} class:fail={rating === 'F'}>{rating}</span>
-			</dd>
-		</dl>
 	</div>
 
 	<div class="review-card">
@@ -179,7 +143,6 @@
 
 	dt { color: var(--text-muted); font-size: 0.875rem; }
 	dd { color: var(--text); margin: 0; font-size: 0.875rem; }
-	dd code { font-size: 0.8rem; }
 
 	.pre-wrap { white-space: pre-wrap; }
 
@@ -201,37 +164,22 @@
 
 	.keyholder-row:last-child { border-bottom: none; }
 
-	.kh-fingerprint {
-		font-family: var(--font-mono);
+	.kh-key {
 		color: var(--accent);
+		font-weight: bold;
 		font-size: 0.8rem;
+		min-width: 3rem;
 	}
 
 	.kh-name { font-weight: bold; }
 	.kh-role { color: var(--text-muted); }
 	.kh-device { color: var(--text-dim); font-size: 0.8rem; }
 
-	.kh-verified {
-		color: var(--success);
+	.kh-fingerprint {
+		font-family: var(--font-mono);
 		font-size: 0.75rem;
-		font-weight: bold;
-		padding: 0.1rem 0.5rem;
-		background: rgba(34, 197, 94, 0.1);
-		border-radius: 1rem;
-	}
-
-	.kh-unverified {
 		color: var(--text-dim);
-		font-size: 0.75rem;
 	}
-
-	.grade {
-		font-weight: bold;
-		font-size: 1rem;
-	}
-
-	.grade.pass { color: var(--success); }
-	.grade.fail { color: var(--danger); }
 
 	.generate-btn {
 		padding: 0.875rem 2rem;

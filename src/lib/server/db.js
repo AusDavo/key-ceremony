@@ -2,7 +2,6 @@ import Database from 'better-sqlite3';
 import { join, dirname } from 'path';
 import { mkdirSync } from 'fs';
 import { fileURLToPath } from 'url';
-import { createHash } from 'crypto';
 import { env } from '$env/dynamic/private';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -39,19 +38,11 @@ db.exec(`
     ceremony_id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
     ceremony_date TEXT NOT NULL,
-    descriptor_hash TEXT NOT NULL,
+    descriptor_hash TEXT NOT NULL DEFAULT '',
     quorum_required INTEGER,
     quorum_total INTEGER,
     quorum_achieved INTEGER,
     document_hash TEXT UNIQUE,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
-  );
-
-  CREATE TABLE IF NOT EXISTS signing_tokens (
-    token TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    xpub_index INTEGER NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
   );
@@ -61,22 +52,9 @@ db.exec(`
     value TEXT,
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
-
-  CREATE TABLE IF NOT EXISTS vault_entries (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    credential_id TEXT NOT NULL,
-    encrypted_descriptor BLOB NOT NULL,
-    iv TEXT NOT NULL,
-    salt TEXT NOT NULL,
-    label TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-    FOREIGN KEY (credential_id) REFERENCES passkey_credentials(credential_id) ON DELETE CASCADE
-  );
 `);
 
-// Schema migrations — add columns if they don't exist (SQLite has no IF NOT EXISTS for ALTER TABLE)
+// Schema migrations — add columns if they don't exist
 const migrations = [
 	'ALTER TABLE users ADD COLUMN encrypted_pdf BLOB',
 	'ALTER TABLE users ADD COLUMN pdf_iv TEXT',
@@ -161,8 +139,8 @@ export const countCredentialsByUser = db.prepare(`
 
 // Ceremonies
 export const insertCeremony = db.prepare(`
-  INSERT INTO ceremonies (ceremony_id, user_id, document_hash, encrypted_metadata, metadata_iv)
-  VALUES (?, ?, ?, ?, ?)
+  INSERT INTO ceremonies (ceremony_id, user_id, ceremony_date, document_hash, encrypted_metadata, metadata_iv)
+  VALUES (?, ?, ?, ?, ?, ?)
 `);
 
 export const getCeremonyByHash = db.prepare(`
@@ -173,31 +151,6 @@ export const getCeremonyById = db.prepare(`
   SELECT * FROM ceremonies WHERE ceremony_id = ?
 `);
 
-// Signing tokens
-function hashToken(rawToken) {
-	return createHash('sha256').update(rawToken).digest('hex');
-}
-
-const _insertSigningToken = db.prepare(`
-  INSERT OR REPLACE INTO signing_tokens (token, user_id, xpub_index) VALUES (?, ?, ?)
-`);
-
-export function insertHashedToken(rawToken, userId, xpubIndex) {
-	return _insertSigningToken.run(hashToken(rawToken), userId, xpubIndex);
-}
-
-const _getSigningToken = db.prepare(`
-  SELECT * FROM signing_tokens WHERE token = ? AND created_at > datetime('now', '-1 day')
-`);
-
-export function getHashedToken(rawToken) {
-	return _getSigningToken.get(hashToken(rawToken));
-}
-
-export const deleteSigningTokensForUser = db.prepare(`
-  DELETE FROM signing_tokens WHERE user_id = ?
-`);
-
 // Settings
 export const getSetting = db.prepare(`
   SELECT value FROM settings WHERE key = ?
@@ -206,24 +159,6 @@ export const getSetting = db.prepare(`
 export const upsertSetting = db.prepare(`
   INSERT INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now'))
   ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
-`);
-
-// Vault entries
-export const insertVaultEntry = db.prepare(`
-  INSERT INTO vault_entries (id, user_id, credential_id, encrypted_descriptor, iv, salt, label)
-  VALUES (?, ?, ?, ?, ?, ?, ?)
-`);
-
-export const getVaultEntriesByUser = db.prepare(`
-  SELECT * FROM vault_entries WHERE user_id = ?
-`);
-
-export const getVaultEntry = db.prepare(`
-  SELECT * FROM vault_entries WHERE id = ? AND user_id = ?
-`);
-
-export const deleteVaultEntry = db.prepare(`
-  DELETE FROM vault_entries WHERE id = ? AND user_id = ?
 `);
 
 export default db;

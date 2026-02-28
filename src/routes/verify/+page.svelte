@@ -118,7 +118,7 @@
 				<dt>Date</dt>
 				<dd>{form.ceremonyDate}</dd>
 				<dt>Quorum</dt>
-				<dd>{form.quorumRequired}-of-{form.quorumTotal} ({form.quorumAchieved} verified)</dd>
+				<dd>{form.quorumRequired}-of-{form.quorumTotal}</dd>
 			</dl>
 		</div>
 	{:else if form?.found === false}

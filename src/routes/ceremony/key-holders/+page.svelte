@@ -9,6 +9,7 @@
 			role: 'Primary Holder',
 			customRole: '',
 			deviceType: data.deviceTypes[0],
+			fingerprint: '',
 			deviceLocation: '',
 			seedBackupLocation: ''
 		};
@@ -21,6 +22,7 @@
 				role: h.role || 'Primary Holder',
 				customRole: h.customRole || '',
 				deviceType: h.deviceType || data.deviceTypes[0],
+				fingerprint: h.fingerprint || '',
 				deviceLocation: h.deviceLocation || '',
 				seedBackupLocation: h.seedBackupLocation || ''
 			}));
@@ -31,6 +33,7 @@
 				role: saved.role || 'Primary Holder',
 				customRole: saved.customRole || '',
 				deviceType: saved.deviceType || data.deviceTypes[0],
+				fingerprint: saved.fingerprint || '',
 				deviceLocation: saved.deviceLocation || '',
 				seedBackupLocation: saved.seedBackupLocation || ''
 			}];
@@ -39,7 +42,7 @@
 	}
 
 	let keyHolders = $state(
-		data.xpubs.map((x, i) => loadSaved(data.savedKeyHolders?.[i]))
+		Array.from({ length: data.keyCount }, (_, i) => loadSaved(data.savedKeyHolders?.[i]))
 	);
 
 	function addHolder(keyIndex) {
@@ -54,13 +57,13 @@
 </script>
 
 <h2>Key Holders</h2>
-<p>Identify who holds each key in your {data.quorum ? `${data.quorum.required}-of-${data.quorum.total}` : ''} multisig wallet.</p>
+<p>Identify who holds each key in your {data.quorumRequired}-of-{data.keyCount} multisig wallet.</p>
 
 <div class="wallet-summary">
-	<span class="wallet-type">{data.addressTypeLabel}</span>
-	{#if data.quorum}
-		<span class="quorum">{data.quorum.required}-of-{data.quorum.total} multisig</span>
+	{#if data.walletType}
+		<span class="wallet-type">{data.walletType}</span>
 	{/if}
+	<span class="quorum">{data.quorumRequired}-of-{data.keyCount} multisig</span>
 </div>
 
 {#if form?.error}
@@ -73,13 +76,10 @@
 	)} />
 
 	<div class="key-list">
-		{#each data.xpubs as xpub, i}
+		{#each Array.from({ length: data.keyCount }) as _, i}
 			<div class="key-card">
 				<div class="key-header">
-					<span class="key-label">
-						Key {i + 1}: <span class="fingerprint">{xpub.fingerprint}</span>
-					</span>
-					<code class="xpub-preview">{xpub.xpubPreview}</code>
+					<span class="key-label">Key {i + 1}</span>
 				</div>
 
 				{#each keyHolders[i] as kh, j}
@@ -123,6 +123,11 @@
 							</label>
 
 							<label>
+								<span>Key Fingerprint (optional)</span>
+								<input type="text" placeholder="e.g. 73c5da0a" bind:value={kh.fingerprint} maxlength="8" />
+							</label>
+
+							<label>
 								<span>Device Storage Location</span>
 								<input type="text" placeholder="e.g. Home safe, Bank safe deposit box" bind:value={kh.deviceLocation} />
 							</label>
@@ -140,7 +145,7 @@
 		{/each}
 	</div>
 
-	<button type="submit" disabled={!allNamed}>Continue to Verification</button>
+	<button type="submit" disabled={!allNamed}>Continue to Recovery Instructions</button>
 </form>
 
 <style>
@@ -186,27 +191,13 @@
 	}
 
 	.key-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
 		margin-bottom: 1rem;
-		flex-wrap: wrap;
-		gap: 0.5rem;
 	}
 
 	.key-label {
 		font-weight: bold;
-		font-family: var(--font-mono);
 		font-size: 1rem;
-	}
-
-	.fingerprint {
 		color: var(--accent);
-	}
-
-	.xpub-preview {
-		font-size: 0.75rem;
-		color: var(--text-dim);
 	}
 
 	.fields {

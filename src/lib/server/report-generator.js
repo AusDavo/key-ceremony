@@ -28,33 +28,11 @@ function generateCeremonyReference() {
 	return `KC-${year}-${seq}`;
 }
 
-export function hashDescriptor(descriptor) {
-	return createHash('sha256').update(descriptor.trim()).digest('hex');
-}
-
-function computeRating(quorumRequired, totalSigners, quorumAchieved) {
-	if (quorumAchieved >= totalSigners) {
-		return { quorumResult: 'Exceeded', rating: 'A+' };
-	} else if (quorumAchieved >= quorumRequired) {
-		return { quorumResult: 'Met', rating: 'A' };
-	} else {
-		return { quorumResult: 'Not Met', rating: 'F' };
-	}
-}
-
-function buildKeyHolderRows(xpubs, keyHolders, signatures) {
+function buildKeyHolderRows(keyCount, keyHolders) {
 	const rows = [];
-	for (let i = 0; i < xpubs.length; i++) {
-		const xpub = xpubs[i];
+	for (let i = 0; i < keyCount; i++) {
 		const raw = keyHolders[i] || keyHolders[String(i)];
 		const holderList = Array.isArray(raw) ? raw : (raw && raw.name) ? [raw] : [{}];
-		const signed = signatures && (signatures[i] != null || signatures[String(i)] != null);
-		const fp = xpub.xpubFingerprint !== 'unknown'
-			? `<code>${escapeHtml(xpub.xpubFingerprint)}</code>`
-			: '&mdash;';
-		const verifiedCell = signed
-			? '<td class="verified">Verified</td>'
-			: '<td class="not-verified">Not verified</td>';
 
 		for (let j = 0; j < holderList.length; j++) {
 			const holder = holderList[j];
@@ -63,27 +41,28 @@ function buildKeyHolderRows(xpubs, keyHolders, signatures) {
 				? escapeHtml(holder.customRole || '')
 				: escapeHtml(holder.role || '');
 			const device = escapeHtml(holder.deviceType || '');
+			const fp = holder.fingerprint
+				? `<code>${escapeHtml(holder.fingerprint)}</code>`
+				: '&mdash;';
 
 			rows.push(`      <tr>
         <td>${j === 0 ? fp : ''}</td>
         <td>${name}</td>
         <td>${role}</td>
         <td>${device}</td>
-        ${j === 0 ? verifiedCell : '<td></td>'}
       </tr>`);
 		}
 	}
 	return rows.join('\n');
 }
 
-function buildStorageRows(xpubs, keyHolders) {
+function buildStorageRows(keyCount, keyHolders) {
 	const rows = [];
-	for (let i = 0; i < xpubs.length; i++) {
-		const xpub = xpubs[i];
+	for (let i = 0; i < keyCount; i++) {
 		const raw = keyHolders[i] || keyHolders[String(i)];
 		const holderList = Array.isArray(raw) ? raw : (raw && raw.name) ? [raw] : [{}];
-		const fp = xpub.xpubFingerprint !== 'unknown'
-			? `<code>${escapeHtml(xpub.xpubFingerprint)}</code>`
+		const fp = holderList[0]?.fingerprint
+			? `<code>${escapeHtml(holderList[0].fingerprint)}</code>`
 			: '&mdash;';
 
 		for (let j = 0; j < holderList.length; j++) {
@@ -99,26 +78,6 @@ function buildStorageRows(xpubs, keyHolders) {
 		}
 	}
 	return rows.join('\n');
-}
-
-function buildTechnicalRows(xpubs) {
-	return xpubs.map((xpub, i) => {
-		const fp = xpub.xpubFingerprint !== 'unknown'
-			? escapeHtml(xpub.xpubFingerprint)
-			: '&mdash;';
-		const truncatedXpub = xpub.xpub
-			? escapeHtml(xpub.xpub.slice(0, 20) + '...' + xpub.xpub.slice(-8))
-			: '&mdash;';
-		const path = xpub.derivationPath
-			? `<code>${escapeHtml(xpub.derivationPath)}</code>`
-			: '&mdash;';
-		return `      <tr>
-        <td>${i + 1}</td>
-        <td><code>${fp}</code></td>
-        <td><code>${truncatedXpub}</code></td>
-        <td>${path}</td>
-      </tr>`;
-	}).join('\n');
 }
 
 function buildRecoverySection(recoveryInstructions) {
@@ -148,23 +107,15 @@ function buildRecoverySection(recoveryInstructions) {
  * Generate a ceremony record PDF.
  *
  * @param {object} params
- * @param {object} params.descriptorParsed - parsed descriptor
- * @param {string} params.descriptorRaw - raw descriptor string
- * @param {object} params.signingChallenge - { challenge, blockHeight, blockHash }
- * @param {number} params.quorumAchieved - number of signatures collected
- * @param {object} params.signatures - per-xpub signatures { 0: '...', 1: '...', ... }
- * @param {object} params.keyHolders - per-xpub key holder info { 0: {name, role, ...}, ... }
+ * @param {object} params.walletConfig - { keyCount, quorumRequired, walletType }
+ * @param {object} params.keyHolders - per-key holder info { 0: [{name, role, ...}], ... }
  * @param {object} params.recoveryInstructions - recovery instructions
  *
- * @returns {{ ceremonyReference, ceremonyDate, descriptorHash, documentHash, buildDir }}
+ * @returns {{ ceremonyReference, ceremonyDate, documentHash, pdfBuffer, buildDir }}
  */
 export function generateCeremonyDocument(params) {
 	const {
-		descriptorParsed,
-		descriptorRaw,
-		signingChallenge,
-		quorumAchieved,
-		signatures,
+		walletConfig,
 		keyHolders,
 		recoveryInstructions
 	} = params;
@@ -173,17 +124,6 @@ export function generateCeremonyDocument(params) {
 	const ceremonyDate = new Date().toLocaleDateString('en-AU', {
 		day: '2-digit', month: '2-digit', year: 'numeric'
 	});
-	const descriptorHash = hashDescriptor(descriptorRaw);
-
-	const quorum = descriptorParsed.quorum || {
-		required: 1,
-		total: descriptorParsed.xpubs.length
-	};
-	const { quorumResult, rating } = computeRating(
-		quorum.required, quorum.total, quorumAchieved
-	);
-
-	const ratingClass = rating === 'F' ? 'fail' : 'pass';
 
 	// Prepare tmp directory
 	const buildId = randomUUID();
@@ -191,9 +131,8 @@ export function generateCeremonyDocument(params) {
 	mkdirSync(buildDir, { recursive: true });
 
 	// Build dynamic content
-	const keyHolderRows = buildKeyHolderRows(descriptorParsed.xpubs, keyHolders, signatures);
-	const storageRows = buildStorageRows(descriptorParsed.xpubs, keyHolders);
-	const technicalRows = buildTechnicalRows(descriptorParsed.xpubs);
+	const keyHolderRows = buildKeyHolderRows(walletConfig.keyCount, keyHolders);
+	const storageRows = buildStorageRows(walletConfig.keyCount, keyHolders);
 	const recoveryContent = buildRecoverySection(recoveryInstructions || {});
 
 	// Read and populate template
@@ -202,22 +141,12 @@ export function generateCeremonyDocument(params) {
 	const replacements = {
 		'{{CEREMONY_REFERENCE}}': ceremonyRef,
 		'{{CEREMONY_DATE}}': ceremonyDate,
-		'{{DESCRIPTOR_HASH}}': descriptorHash,
-		'{{ADDRESS_TYPE}}': escapeHtml(descriptorParsed.addressTypeLabel || descriptorParsed.addressType || ''),
-		'{{QUORUM_REQUIRED}}': quorum.required.toString(),
-		'{{QUORUM_TOTAL}}': quorum.total.toString(),
-		'{{QUORUM_ACHIEVED}}': quorumAchieved.toString(),
-		'{{QUORUM_RESULT}}': quorumResult,
-		'{{RATING}}': rating,
-		'{{RATING_CLASS}}': ratingClass,
+		'{{WALLET_TYPE}}': escapeHtml(walletConfig.walletType || ''),
+		'{{QUORUM_REQUIRED}}': walletConfig.quorumRequired.toString(),
+		'{{QUORUM_TOTAL}}': walletConfig.keyCount.toString(),
 		'{{KEY_HOLDER_ROWS}}': keyHolderRows,
 		'{{STORAGE_ROWS}}': storageRows,
-		'{{TECHNICAL_ROWS}}': technicalRows,
-		'{{RECOVERY_CONTENT}}': recoveryContent,
-		'{{CHALLENGE}}': escapeHtml(signingChallenge?.challenge || ''),
-		'{{BLOCK_HEIGHT}}': (signingChallenge?.blockHeight || 0).toLocaleString('en-AU'),
-		'{{KEYS_VERIFIED}}': `${quorumAchieved} of ${quorum.total}`,
-		'{{NETWORK}}': descriptorParsed.network || 'mainnet'
+		'{{RECOVERY_CONTENT}}': recoveryContent
 	};
 
 	for (const [placeholder, value] of Object.entries(replacements)) {
@@ -242,7 +171,6 @@ export function generateCeremonyDocument(params) {
 	return {
 		ceremonyReference: ceremonyRef,
 		ceremonyDate,
-		descriptorHash,
 		documentHash,
 		pdfBuffer,
 		buildDir

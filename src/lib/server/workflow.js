@@ -3,10 +3,8 @@ import { encryptForUser, decryptForUser } from './encryption.js';
 
 const WORKFLOW_STATES = [
 	'registered',
-	'descriptor',
+	'setup',
 	'key_holders',
-	'verification',
-	'verified',
 	'recovery',
 	'review',
 	'completed'
@@ -55,18 +53,16 @@ export function canAccessStep(currentState, requiredState) {
  * Map a workflow state to the URL the user should resume at.
  */
 const STATE_RESUME_URL = {
-	registered:   '/ceremony/descriptor',
-	descriptor:   '/ceremony/key-holders',
-	key_holders:  '/ceremony/verification',
-	verification: '/ceremony/verification',
-	verified:     '/ceremony/recovery',
+	registered:   '/ceremony/setup',
+	setup:        '/ceremony/key-holders',
+	key_holders:  '/ceremony/recovery',
 	recovery:     '/ceremony/review',
 	review:       '/ceremony/review',
 	completed:    '/ceremony/dashboard'
 };
 
 export function getResumeUrl(workflowState) {
-	return STATE_RESUME_URL[workflowState] || '/ceremony/descriptor';
+	return STATE_RESUME_URL[workflowState] || '/ceremony/setup';
 }
 
 export { WORKFLOW_STATES };

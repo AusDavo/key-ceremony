@@ -11,16 +11,11 @@ export function load({ locals }) {
 	}
 
 	const data = getWorkflowData(user);
-	const parsed = data.descriptorParsed;
 
 	return {
-		descriptorParsed: parsed,
+		walletConfig: data.walletConfig,
 		keyHolders: data.keyHolders || {},
-		quorumAchieved: data.quorumAchieved || Object.keys(data.signatures || {}).length,
-		signatures: Object.keys(data.signatures || {}),
-		recoveryInstructions: data.recoveryInstructions || {},
-		challenge: data.signingChallenge?.challenge,
-		blockHeight: data.signingChallenge?.blockHeight
+		recoveryInstructions: data.recoveryInstructions || {}
 	};
 }
 
@@ -32,11 +27,7 @@ export const actions = {
 		let result;
 		try {
 			result = generateCeremonyDocument({
-				descriptorParsed: data.descriptorParsed,
-				descriptorRaw: data.descriptorRaw,
-				signingChallenge: data.signingChallenge,
-				quorumAchieved: data.quorumAchieved || Object.keys(data.signatures || {}).length,
-				signatures: data.signatures || {},
+				walletConfig: data.walletConfig,
 				keyHolders: data.keyHolders || {},
 				recoveryInstructions: data.recoveryInstructions || {}
 			});
@@ -49,24 +40,21 @@ export const actions = {
 		const { encrypted: encryptedPdf, iv: pdfIv } = encryptBufferForUser(result.pdfBuffer, user.user_id);
 		updateEncryptedPdf.run(encryptedPdf, pdfIv, user.user_id);
 
-		// Clean up temp files immediately — PDF is now in the database
+		// Clean up temp files immediately
 		cleanupBuild(result.buildDir);
 
 		// Encrypt ceremony metadata
-		const quorum = data.descriptorParsed.quorum || { required: 1, total: data.descriptorParsed.xpubs.length };
-		const quorumAchieved = data.quorumAchieved || Object.keys(data.signatures || {}).length;
 		const metadata = {
 			ceremonyDate: result.ceremonyDate,
-			descriptorHash: result.descriptorHash,
-			quorumRequired: quorum.required,
-			quorumTotal: quorum.total,
-			quorumAchieved
+			quorumRequired: data.walletConfig.quorumRequired,
+			quorumTotal: data.walletConfig.keyCount
 		};
 		const { encrypted: encryptedMeta, iv: metaIv } = encryptForUser(metadata, user.user_id);
 
 		insertCeremony.run(
 			result.ceremonyReference,
 			user.user_id,
+			result.ceremonyDate,
 			result.documentHash,
 			encryptedMeta,
 			metaIv
@@ -75,17 +63,13 @@ export const actions = {
 		// Clear purge timer — completed users are not purged
 		setPurgeAfter.run(null, user.user_id);
 
-		// Only keep display data + descriptor (for vault).
-		// Sensitive ceremony details (keyHolders, signatures, recovery, etc.)
-		// are in the PDF — no reason to keep them on the server.
+		// Only keep display data after generation
 		saveWorkflowData(
 			user.user_id,
 			{},
 			{
 				ceremonyReference: result.ceremonyReference,
-				documentHash: result.documentHash,
-				descriptorHash: result.descriptorHash,
-				descriptorRaw: data.descriptorRaw
+				documentHash: result.documentHash
 			},
 			'completed',
 			user.workflow_state

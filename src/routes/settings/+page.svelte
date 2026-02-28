@@ -80,10 +80,10 @@
 
 	<div class="section danger-zone">
 		<h3>Danger Zone</h3>
-		<p>Deleting your account will permanently remove all data including ceremony records and vault entries. This cannot be undone.</p>
+		<p>Deleting your account will permanently remove all data including ceremony records. This cannot be undone.</p>
 		<form method="POST" action="?/deleteAccount" use:enhance>
 			<button type="submit" class="delete-account-btn" onclick={(e) => {
-				if (!confirm('Are you sure you want to delete your account? All ceremony records, vault entries, and passkeys will be permanently deleted.')) {
+				if (!confirm('Are you sure you want to delete your account? All ceremony records and passkeys will be permanently deleted.')) {
 					e.preventDefault();
 				}
 			}}>Delete Account</button>
@@ -91,10 +91,7 @@
 	</div>
 
 	<div class="nav-links">
-		<a href="/ceremony/descriptor">Back to Ceremony</a>
-		{#if data.credentials.length > 0}
-			<a href="/vault">Vault</a>
-		{/if}
+		<a href="/ceremony/setup">Back to Ceremony</a>
 	</div>
 </div>
 
