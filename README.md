@@ -178,15 +178,31 @@ Tested with:
 
 Any wallet that supports BIP-137 or BIP-322 message signing should work.
 
-## Security model
+## Security and trust model
 
-**Server sees during your session:** wallet output descriptor (for parsing and address derivation), key holder details (for PDF generation), signatures (for verification).
+### What the server cannot access
 
-**Server stores at rest:** all workflow data encrypted with AES-256-GCM using a server-side key; vault entries encrypted with WebAuthn PRF (key derived in the browser — server stores only ciphertext and cannot decrypt).
+- **Seed phrases and private keys** — never entered into the application
+- **Vault contents** — encrypted client-side with WebAuthn PRF. The encryption key is derived from your passkey in the browser and never transmitted. The server stores only ciphertext. This is genuine zero-knowledge encryption.
 
-**Server never sees:** seed phrases, private keys, vault plaintext.
+### What the server encrypts but could theoretically access
 
-**For maximum privacy:** self-host the application, and delete your account after downloading your ceremony PDF.
+Workflow data (wallet descriptor, key holder details, recovery instructions, signatures) and ceremony PDFs are encrypted at rest using AES-256-GCM with per-user keys derived via HKDF from a server-side master key. Ceremony metadata in the database is also encrypted.
+
+**This is a trust-the-operator model, not zero-knowledge.** The server operator holds the master encryption key (`ENCRYPTION_KEY`) and could derive any user's key to decrypt their data. The encryption protects against database leaks, stolen backups, and at-rest exposure — but not against a malicious operator.
+
+This is the same trust model as most web applications, including those that advertise "encryption at rest." It is honest, standard, and appropriate for a self-hostable tool where you can be your own operator.
+
+### Data lifecycle
+
+- Ceremony PDFs are encrypted and stored in the database. They are available for a single download, then permanently deleted from the server.
+- Workflow data is encrypted with a per-user key. Compromising one user's data does not expose others (though the master key can derive all per-user keys).
+- Abandoned accounts are automatically purged after 90 days. Completed accounts persist until the user deletes them from Settings.
+- The vault is the only component where the server is mathematically unable to access the plaintext, regardless of operator intent.
+
+### Self-hosting recommendation
+
+For maximum security, self-host the application. When you are the operator, the trust model becomes: you trust yourself. Generate your own `ENCRYPTION_KEY`, run the instance on infrastructure you control, and delete your account after downloading your ceremony PDF.
 
 ## Related projects
 
