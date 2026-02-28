@@ -76,6 +76,31 @@ function buildKeyHolderRows(xpubs, keyHolders, signatures) {
 	return rows.join('\n');
 }
 
+function buildStorageRows(xpubs, keyHolders) {
+	const rows = [];
+	for (let i = 0; i < xpubs.length; i++) {
+		const xpub = xpubs[i];
+		const raw = keyHolders[i] || keyHolders[String(i)];
+		const holderList = Array.isArray(raw) ? raw : (raw && raw.name) ? [raw] : [{}];
+		const fp = xpub.xpubFingerprint !== 'unknown'
+			? `<code>${escapeHtml(xpub.xpubFingerprint)}</code>`
+			: '&mdash;';
+
+		for (let j = 0; j < holderList.length; j++) {
+			const holder = holderList[j];
+			const deviceLoc = escapeHtml(holder.deviceLocation || '') || '&mdash;';
+			const seedLoc = escapeHtml(holder.seedBackupLocation || '') || '&mdash;';
+
+			rows.push(`      <tr>
+        <td>${j === 0 ? fp : ''}</td>
+        <td>${deviceLoc}</td>
+        <td>${seedLoc}</td>
+      </tr>`);
+		}
+	}
+	return rows.join('\n');
+}
+
 function buildTechnicalRows(xpubs) {
 	return xpubs.map((xpub, i) => {
 		const fp = xpub.xpubFingerprint !== 'unknown'
@@ -167,6 +192,7 @@ export function generateCeremonyDocument(params) {
 
 	// Build dynamic content
 	const keyHolderRows = buildKeyHolderRows(descriptorParsed.xpubs, keyHolders, signatures);
+	const storageRows = buildStorageRows(descriptorParsed.xpubs, keyHolders);
 	const technicalRows = buildTechnicalRows(descriptorParsed.xpubs);
 	const recoveryContent = buildRecoverySection(recoveryInstructions || {});
 
@@ -185,6 +211,7 @@ export function generateCeremonyDocument(params) {
 		'{{RATING}}': rating,
 		'{{RATING_CLASS}}': ratingClass,
 		'{{KEY_HOLDER_ROWS}}': keyHolderRows,
+		'{{STORAGE_ROWS}}': storageRows,
 		'{{TECHNICAL_ROWS}}': technicalRows,
 		'{{RECOVERY_CONTENT}}': recoveryContent,
 		'{{CHALLENGE}}': escapeHtml(signingChallenge?.challenge || ''),
