@@ -230,7 +230,7 @@
 	</div>
 
 	<div class="privacy">
-		<p>No wallet descriptor, seed phrases, or private keys are entered. All ceremony data is encrypted in your browser before reaching the server. The server stores only opaque encrypted blobs. No tracking, no analytics, no third-party scripts. <a href="https://github.com/AusDavo/key-ceremony">Open source</a> and self-hostable.</p>
+		<p>Your data never leaves your browser unencrypted. The server cannot read your ceremony details — it only stores scrambled data that your passkey can unlock. No seed phrases or private keys are entered. No tracking, no analytics. <a href="https://github.com/AusDavo/key-ceremony">Open source</a> and self-hostable.</p>
 	</div>
 
 	<div class="features">
