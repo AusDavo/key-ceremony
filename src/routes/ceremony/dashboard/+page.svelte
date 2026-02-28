@@ -40,7 +40,7 @@
 <div class="upsell-cta">
 	<h3>Need Proof-of-Reserves?</h3>
 	<p>CertainKey generates audit-ready Bitcoin proof-of-reserves reports for SMSFs and institutions.</p>
-	<a href="https://certainkey.com" class="upsell-link" target="_blank" rel="noopener">Learn more at certainkey.com</a>
+	<a href="https://app.certainkey.dpinkerton.com" class="upsell-link" target="_blank" rel="noopener">Try CertainKey</a>
 </div>
 
 <div class="purge-notice">

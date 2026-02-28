@@ -180,7 +180,7 @@ Any wallet that supports BIP-137 or BIP-322 message signing should work.
 
 ## Related projects
 
-- **[CertainKey](https://certainkey.com)** — Audit-ready Bitcoin proof-of-reserves reports for SMSFs and institutions
+- **[CertainKey](https://app.certainkey.dpinkerton.com)** — Audit-ready Bitcoin proof-of-reserves reports for SMSFs and institutions
 - **[My Bitcoin Will](https://mybitcoinwill.com)** — Bitcoin inheritance planning (Dale Warburton, Q2 2026)
 
 ## License
