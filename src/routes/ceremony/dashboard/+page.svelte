@@ -1,7 +1,20 @@
 <script>
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 
 	let { data } = $props();
+
+	async function downloadPdf() {
+		const link = document.createElement('a');
+		link.href = '/ceremony/download';
+		link.download = '';
+		document.body.appendChild(link);
+		link.click();
+		link.remove();
+		// Wait briefly for the download to start, then refresh data
+		await new Promise(r => setTimeout(r, 1000));
+		await invalidateAll();
+	}
 </script>
 
 <h2>Ceremony Complete</h2>
@@ -18,7 +31,7 @@
 
 	{#if data.hasPdf}
 		<p class="download-notice">Your ceremony PDF is available for a single download. It will be permanently deleted from the server once downloaded.</p>
-		<a href="/ceremony/download" class="download-button">Download Ceremony PDF</a>
+		<button class="download-button" onclick={downloadPdf}>Download Ceremony PDF</button>
 	{:else}
 		<p class="downloaded-notice">Your ceremony PDF has been downloaded and deleted from the server.</p>
 	{/if}
@@ -92,9 +105,11 @@
 		padding: 0.875rem 2rem;
 		background: var(--accent);
 		color: #000;
+		border: none;
 		border-radius: 0.375rem;
 		font-weight: bold;
-		text-decoration: none;
+		font-size: 1rem;
+		cursor: pointer;
 		margin: 1rem 0;
 	}
 
