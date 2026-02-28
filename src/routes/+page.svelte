@@ -235,6 +235,7 @@
 
 	<div class="features">
 		<a href="/key-ceremony-blank-template.pdf">Download blank template (PDF)</a>
+		<p class="related">Need audit-ready proof-of-reserves for an SMSF? See <a href="https://certainkey.dpinkerton.com">CertainKey</a>.</p>
 	</div>
 
 	<div class="auth-buttons">
@@ -364,6 +365,12 @@
 
 	.features a:hover {
 		color: var(--accent);
+	}
+
+	.related {
+		font-size: 0.85rem;
+		color: var(--text-dim);
+		margin-top: 0.5rem;
 	}
 
 	.auth-buttons {
