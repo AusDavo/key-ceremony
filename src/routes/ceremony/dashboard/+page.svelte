@@ -18,13 +18,18 @@
 		</dl>
 	</div>
 
-	<a href="/ceremony/download" class="download-button">Download Ceremony PDF</a>
+	{#if data.hasPdf}
+		<p class="download-notice">Your ceremony PDF is available for a single download. It will be permanently deleted from the server once downloaded.</p>
+		<a href="/ceremony/download" class="download-button">Download Ceremony PDF</a>
+	{:else}
+		<p class="downloaded-notice">Your ceremony PDF has already been downloaded and deleted from the server.</p>
+	{/if}
 </div>
 
 {#if data.hasDescriptor}
 	<div class="vault-cta">
 		<h3>Save Descriptor to Vault</h3>
-		<p>Encrypt your wallet descriptor with your passkey. Only you can decrypt it — the server never sees the plaintext.</p>
+		<p>Encrypt your wallet descriptor with your passkey. Only you can decrypt it — the server never sees the plaintext. Requires a passkey with PRF support (e.g. YubiKey, Windows Hello).</p>
 		<a href="/vault" class="vault-button">Open Vault</a>
 	</div>
 {/if}
@@ -50,7 +55,7 @@
 <div class="actions">
 	<form method="POST" action="?/reset" use:enhance>
 		<button type="submit" class="secondary" onclick={(e) => {
-			if (!confirm('This will clear all your data and start fresh. Make sure you have downloaded your ceremony record.')) {
+			if (!confirm('This will clear all ceremony data and start fresh. This cannot be undone.')) {
 				e.preventDefault();
 			}
 		}}>Start New Ceremony</button>
@@ -105,6 +110,18 @@
 
 	.download-button:hover {
 		background: var(--accent-hover);
+	}
+
+	.download-notice {
+		font-size: 0.85rem;
+		color: var(--warning, #e2a308);
+		margin-bottom: 0.5rem;
+	}
+
+	.downloaded-notice {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		font-style: italic;
 	}
 
 	.vault-cta, .donate-cta, .upsell-cta {

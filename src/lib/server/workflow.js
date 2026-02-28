@@ -1,5 +1,5 @@
 import { updateWorkflowState, updateEncryptedBlob } from './db.js';
-import { encryptObject, decryptObject } from './encryption.js';
+import { encryptForUser, decryptForUser } from './encryption.js';
 
 const WORKFLOW_STATES = [
 	'registered',
@@ -19,7 +19,7 @@ export function getWorkflowData(user) {
 	if (!user.encrypted_blob || !user.iv) {
 		return {};
 	}
-	return decryptObject(user.encrypted_blob, user.iv);
+	return decryptForUser(user.encrypted_blob, user.iv, user.user_id);
 }
 
 /**
@@ -28,7 +28,7 @@ export function getWorkflowData(user) {
  */
 export function saveWorkflowData(userId, currentData, newData, newState, currentState) {
 	const merged = { ...currentData, ...newData };
-	const { encrypted, iv } = encryptObject(merged);
+	const { encrypted, iv } = encryptForUser(merged, userId);
 	updateEncryptedBlob.run(encrypted, iv, userId);
 
 	if (newState) {

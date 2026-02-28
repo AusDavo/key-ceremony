@@ -217,6 +217,7 @@ export function generateCeremonyDocument(params) {
 		ceremonyDate,
 		descriptorHash,
 		documentHash,
+		pdfBuffer,
 		buildDir
 	};
 }

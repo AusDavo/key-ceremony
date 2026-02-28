@@ -1,7 +1,8 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { getWorkflowData, saveWorkflowData, canAccessStep } from '$lib/server/workflow.js';
-import { setPurgeAfter, insertCeremony } from '$lib/server/db.js';
+import { setPurgeAfter, insertCeremony, updateEncryptedPdf } from '$lib/server/db.js';
 import { generateCeremonyDocument, cleanupBuild } from '$lib/server/report-generator.js';
+import { encryptBufferForUser, encryptForUser } from '$lib/server/encryption.js';
 
 export function load({ locals }) {
 	const { user } = locals;
@@ -44,17 +45,31 @@ export const actions = {
 			return fail(500, { error: `Document generation failed: ${err.message}` });
 		}
 
+		// Encrypt the PDF and store in database
+		const { encrypted: encryptedPdf, iv: pdfIv } = encryptBufferForUser(result.pdfBuffer, user.user_id);
+		updateEncryptedPdf.run(encryptedPdf, pdfIv, user.user_id);
+
+		// Clean up temp files immediately — PDF is now in the database
+		cleanupBuild(result.buildDir);
+
+		// Encrypt ceremony metadata
 		const quorum = data.descriptorParsed.quorum || { required: 1, total: data.descriptorParsed.xpubs.length };
+		const quorumAchieved = data.quorumAchieved || Object.keys(data.signatures || {}).length;
+		const metadata = {
+			ceremonyDate: result.ceremonyDate,
+			descriptorHash: result.descriptorHash,
+			quorumRequired: quorum.required,
+			quorumTotal: quorum.total,
+			quorumAchieved
+		};
+		const { encrypted: encryptedMeta, iv: metaIv } = encryptForUser(metadata, user.user_id);
 
 		insertCeremony.run(
 			result.ceremonyReference,
 			user.user_id,
-			result.ceremonyDate,
-			result.descriptorHash,
-			quorum.required,
-			quorum.total,
-			data.quorumAchieved || Object.keys(data.signatures || {}).length,
-			result.documentHash
+			result.documentHash,
+			encryptedMeta,
+			metaIv
 		);
 
 		// Clear purge timer — completed users are not purged
@@ -67,9 +82,13 @@ export const actions = {
 				ceremonyReference: result.ceremonyReference,
 				documentHash: result.documentHash,
 				descriptorHash: result.descriptorHash,
-				ceremonyBuildDir: result.buildDir,
 				descriptorRaw: data.descriptorRaw,
-				descriptorParsed: data.descriptorParsed
+				descriptorParsed: data.descriptorParsed,
+				keyHolders: data.keyHolders,
+				signatures: data.signatures,
+				recoveryInstructions: data.recoveryInstructions,
+				signingChallenge: data.signingChallenge,
+				quorumAchieved
 			},
 			'completed',
 			user.workflow_state

@@ -76,6 +76,22 @@ db.exec(`
   );
 `);
 
+// Schema migrations — add columns if they don't exist (SQLite has no IF NOT EXISTS for ALTER TABLE)
+const migrations = [
+	'ALTER TABLE users ADD COLUMN encrypted_pdf BLOB',
+	'ALTER TABLE users ADD COLUMN pdf_iv TEXT',
+	'ALTER TABLE ceremonies ADD COLUMN encrypted_metadata BLOB',
+	'ALTER TABLE ceremonies ADD COLUMN metadata_iv TEXT'
+];
+
+for (const sql of migrations) {
+	try {
+		db.exec(sql);
+	} catch (err) {
+		if (!err.message.includes('duplicate column')) throw err;
+	}
+}
+
 // Users
 export const createUser = db.prepare(`
   INSERT INTO users (user_id) VALUES (?)
@@ -99,6 +115,18 @@ export const setPurgeAfter = db.prepare(`
 
 export const purgeUser = db.prepare(`
   DELETE FROM users WHERE user_id = ?
+`);
+
+export const updateEncryptedPdf = db.prepare(`
+  UPDATE users SET encrypted_pdf = ?, pdf_iv = ? WHERE user_id = ?
+`);
+
+export const getEncryptedPdf = db.prepare(`
+  SELECT encrypted_pdf, pdf_iv FROM users WHERE user_id = ?
+`);
+
+export const clearEncryptedPdf = db.prepare(`
+  UPDATE users SET encrypted_pdf = NULL, pdf_iv = NULL WHERE user_id = ?
 `);
 
 export const getExpiredUsers = db.prepare(`
@@ -133,8 +161,8 @@ export const countCredentialsByUser = db.prepare(`
 
 // Ceremonies
 export const insertCeremony = db.prepare(`
-  INSERT INTO ceremonies (ceremony_id, user_id, ceremony_date, descriptor_hash, quorum_required, quorum_total, quorum_achieved, document_hash)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO ceremonies (ceremony_id, user_id, document_hash, encrypted_metadata, metadata_iv)
+  VALUES (?, ?, ?, ?, ?)
 `);
 
 export const getCeremonyByHash = db.prepare(`

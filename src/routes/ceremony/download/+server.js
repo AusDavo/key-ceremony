@@ -1,8 +1,7 @@
 import { error } from '@sveltejs/kit';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import { getWorkflowData } from '$lib/server/workflow.js';
-import { cleanupBuild } from '$lib/server/report-generator.js';
+import { getEncryptedPdf, clearEncryptedPdf } from '$lib/server/db.js';
+import { decryptBufferForUser } from '$lib/server/encryption.js';
 
 export function GET({ locals }) {
 	const { user } = locals;
@@ -12,18 +11,19 @@ export function GET({ locals }) {
 
 	const data = getWorkflowData(user);
 
-	if (!data.ceremonyBuildDir || !data.ceremonyReference) {
+	if (!data.ceremonyReference) {
 		throw error(404, 'No ceremony record available for download');
 	}
 
-	let pdfBuffer;
-	try {
-		pdfBuffer = readFileSync(join(data.ceremonyBuildDir, 'report.pdf'));
-	} catch {
-		throw error(404, 'Ceremony record file not found. It may have been cleaned up.');
+	const row = getEncryptedPdf.get(user.user_id);
+	if (!row?.encrypted_pdf || !row?.pdf_iv) {
+		throw error(404, 'Ceremony record not found. It may have been generated before encrypted storage was enabled.');
 	}
 
-	cleanupBuild(data.ceremonyBuildDir);
+	const pdfBuffer = decryptBufferForUser(row.encrypted_pdf, row.pdf_iv, user.user_id);
+
+	// Delete the encrypted PDF — single-use download
+	clearEncryptedPdf.run(user.user_id);
 
 	return new Response(pdfBuffer, {
 		headers: {

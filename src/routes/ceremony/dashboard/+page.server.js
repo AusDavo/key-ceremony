@@ -15,7 +15,8 @@ export function load({ locals }) {
 		documentHash: data.documentHash,
 		descriptorHash: data.descriptorHash,
 		donationsEnabled: isDonationsEnabled(),
-		hasDescriptor: !!data.descriptorRaw
+		hasDescriptor: !!data.descriptorRaw,
+		hasPdf: !!(user.encrypted_pdf && user.pdf_iv)
 	};
 }
 

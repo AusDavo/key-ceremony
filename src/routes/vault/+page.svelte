@@ -79,7 +79,26 @@
 
 <div class="vault-page">
 	<h2>Encrypted Vault</h2>
-	<p>Store your wallet descriptor encrypted with your passkey. The server never sees the plaintext — encryption happens entirely in your browser using WebAuthn PRF.</p>
+	<p>Store your wallet descriptor encrypted with your passkey. The server never sees the plaintext — encryption happens entirely in your browser using the WebAuthn PRF extension.</p>
+
+	<details class="prf-compat">
+		<summary>Which passkeys support this?</summary>
+		<p>The vault requires the <strong>PRF extension</strong>, which not all passkeys support. Known compatible authenticators:</p>
+		<ul>
+			<li>YubiKey 5 series (firmware 5.7+)</li>
+			<li>Windows Hello</li>
+			<li>macOS / iCloud Keychain (Safari 18.4+ / macOS 15.4+)</li>
+			<li>Android passkeys (Chrome 132+)</li>
+		</ul>
+		<p>Known <strong>incompatible</strong>:</p>
+		<ul>
+			<li>Bitwarden</li>
+			<li>1Password</li>
+			<li>Firefox built-in credential manager</li>
+			<li>Older security keys without HMAC-secret support</li>
+		</ul>
+		<p>If your passkey doesn't support PRF, you'll see an error when you try to encrypt. Your descriptor won't be lost — it just won't be saved to the vault.</p>
+	</details>
 
 	{#if error}
 		<p class="error">{error}</p>
@@ -296,6 +315,33 @@
 		font-size: 0.875rem;
 		padding: 1rem;
 		text-align: center;
+	}
+
+	.prf-compat {
+		margin: 1rem 0;
+		padding: 0.75rem 1rem;
+		border: 1px solid var(--border);
+		border-radius: 0.375rem;
+		background: var(--bg-surface);
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		line-height: 1.6;
+	}
+
+	.prf-compat summary {
+		cursor: pointer;
+		color: var(--text);
+		font-weight: 600;
+		font-size: 0.875rem;
+	}
+
+	.prf-compat ul {
+		margin: 0.25rem 0 0.5rem 1.25rem;
+		padding: 0;
+	}
+
+	.prf-compat li {
+		margin-bottom: 0.125rem;
 	}
 
 	.error {
