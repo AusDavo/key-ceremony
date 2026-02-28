@@ -1,7 +1,7 @@
 <script>
 	import { enhance } from '$app/forms';
 
-	let { data } = $props();
+	let { data, form } = $props();
 </script>
 
 <h2>Ceremony Complete</h2>
@@ -22,44 +22,69 @@
 		<p class="download-notice">Your ceremony PDF is available for a single download. It will be permanently deleted from the server once downloaded.</p>
 		<a href="/ceremony/download" class="download-button">Download Ceremony PDF</a>
 	{:else}
-		<p class="downloaded-notice">Your ceremony PDF has already been downloaded and deleted from the server.</p>
+		<p class="downloaded-notice">Your ceremony PDF has been downloaded and deleted from the server.</p>
 	{/if}
 </div>
 
 {#if data.hasDescriptor}
-	<div class="vault-cta">
-		<h3>Save Descriptor to Vault</h3>
-		<p>Encrypt your wallet descriptor with your passkey. Only you can decrypt it — the server never sees the plaintext. Requires a passkey with PRF support (e.g. YubiKey, Windows Hello).</p>
-		<a href="/vault" class="vault-button">Open Vault</a>
+	<div class="your-data">
+		<h3>Your Descriptor</h3>
+		<p>Your wallet output descriptor is currently stored (encrypted) on the server. Choose what to do with it:</p>
+
+		<div class="data-actions">
+			<div class="data-action">
+				<a href="/vault" class="action-button primary">Save to Vault</a>
+				<span class="action-desc">Encrypt with your passkey (zero-knowledge). Requires PRF support (e.g. YubiKey, Windows Hello).</span>
+			</div>
+
+			<div class="data-action">
+				<form method="POST" action="?/deleteDescriptor" use:enhance>
+					<button type="submit" class="action-button danger" onclick={(e) => {
+						if (!confirm('Delete your descriptor from the server? Make sure you have a copy (in your vault, on paper, or in your wallet software).')) {
+							e.preventDefault();
+						}
+					}}>Delete from Server</button>
+				</form>
+				<span class="action-desc">Permanently remove the descriptor. Keep a copy elsewhere first.</span>
+			</div>
+		</div>
+	</div>
+{:else}
+	<div class="data-clear">
+		{#if form?.descriptorDeleted}
+			<p class="success">Descriptor deleted from the server.</p>
+		{:else}
+			<p>No sensitive data remains on the server. Your descriptor has been removed.</p>
+		{/if}
 	</div>
 {/if}
+
+<div class="next-steps">
+	<div class="next-actions">
+		<form method="POST" action="?/reset" use:enhance>
+			<button type="submit" class="secondary" onclick={(e) => {
+				if (!confirm('Start a new ceremony? This will clear all remaining data.')) {
+					e.preventDefault();
+				}
+			}}>Start New Ceremony</button>
+		</form>
+
+		<a href="/settings" class="secondary-link">Delete Account</a>
+	</div>
+</div>
 
 {#if data.donationsEnabled}
-	<div class="donate-cta">
+	<div class="cta-card">
 		<h3>Support Key Ceremony</h3>
 		<p>This tool is free and open source. If you found it useful, consider making a Bitcoin donation.</p>
-		<a href="/api/donate" class="donate-button" target="_blank">Donate with Bitcoin</a>
+		<a href="/api/donate" class="cta-link" target="_blank">Donate with Bitcoin</a>
 	</div>
 {/if}
 
-<div class="upsell-cta">
+<div class="cta-card">
 	<h3>Need Proof-of-Reserves?</h3>
 	<p>CertainKey generates audit-ready Bitcoin proof-of-reserves reports for SMSFs and institutions.</p>
-	<a href="https://app.certainkey.dpinkerton.com" class="upsell-link" target="_blank" rel="noopener">Try CertainKey</a>
-</div>
-
-<div class="purge-notice">
-	<p>Your ceremony data is encrypted at rest on the server (AES-256-GCM). Vault entries use zero-knowledge encryption — the server cannot decrypt them. You can <a href="/settings">delete your account</a> and all data from Settings at any time.</p>
-</div>
-
-<div class="actions">
-	<form method="POST" action="?/reset" use:enhance>
-		<button type="submit" class="secondary" onclick={(e) => {
-			if (!confirm('This will clear all ceremony data and start fresh. This cannot be undone.')) {
-				e.preventDefault();
-			}
-		}}>Start New Ceremony</button>
-	</form>
+	<a href="https://app.certainkey.dpinkerton.com" class="cta-link" target="_blank" rel="noopener">Try CertainKey</a>
 </div>
 
 <style>
@@ -124,68 +149,101 @@
 		font-style: italic;
 	}
 
-	.vault-cta, .donate-cta, .upsell-cta {
+	/* Your data section */
+	.your-data {
 		padding: 1.25rem;
 		border: 1px solid var(--border);
 		border-radius: 0.5rem;
 		background: var(--bg-surface);
-		margin-bottom: 1rem;
+		margin-bottom: 1.5rem;
 	}
 
-	.vault-cta h3, .donate-cta h3, .upsell-cta h3 {
+	.your-data h3 {
 		color: var(--accent);
 		font-size: 1rem;
 		margin-bottom: 0.25rem;
 	}
 
-	.vault-cta p, .donate-cta p, .upsell-cta p {
+	.your-data > p {
 		color: var(--text-muted);
 		font-size: 0.875rem;
-		margin-bottom: 0.75rem;
+		margin-bottom: 1rem;
 		line-height: 1.5;
 	}
 
-	.vault-button, .donate-button {
+	.data-actions {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.data-action {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.action-button {
 		display: inline-block;
 		padding: 0.625rem 1.25rem;
-		background: var(--accent);
-		color: #000;
+		border: none;
 		border-radius: 0.375rem;
 		font-weight: bold;
 		font-size: 0.875rem;
 		text-decoration: none;
+		cursor: pointer;
+		white-space: nowrap;
+		flex-shrink: 0;
 	}
 
-	.vault-button:hover, .donate-button:hover {
+	.action-button.primary {
+		background: var(--accent);
+		color: #000;
+	}
+
+	.action-button.primary:hover {
 		background: var(--accent-hover);
 	}
 
-	.upsell-link {
-		color: var(--accent);
-		font-size: 0.875rem;
+	.action-button.danger {
+		background: var(--danger, #ef4444);
+		color: #fff;
 	}
 
-	.purge-notice {
-		padding: 1rem;
-		background: var(--bg-elevated);
+	.action-button.danger:hover {
+		opacity: 0.9;
+	}
+
+	.action-desc {
+		font-size: 0.8rem;
+		color: var(--text-muted);
+		line-height: 1.4;
+	}
+
+	/* Data cleared state */
+	.data-clear {
+		padding: 1rem 1.25rem;
 		border: 1px solid var(--border);
 		border-radius: 0.5rem;
+		background: var(--bg-surface);
 		margin-bottom: 1.5rem;
 		font-size: 0.875rem;
 		color: var(--text-muted);
 	}
 
-	.purge-notice a {
-		color: var(--text);
-		text-decoration: underline;
+	.data-clear .success {
+		color: var(--success);
 	}
 
-	.purge-notice a:hover {
-		color: var(--accent);
-	}
-
-	.actions {
+	/* Next steps */
+	.next-steps {
 		margin-bottom: 1.5rem;
+	}
+
+	.next-actions {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
 	}
 
 	button.secondary {
@@ -200,5 +258,42 @@
 
 	button.secondary:hover {
 		opacity: 0.9;
+	}
+
+	.secondary-link {
+		font-size: 0.875rem;
+		color: var(--text-muted);
+		text-decoration: underline;
+	}
+
+	.secondary-link:hover {
+		color: var(--danger, #ef4444);
+	}
+
+	/* CTA cards */
+	.cta-card {
+		padding: 1.25rem;
+		border: 1px solid var(--border);
+		border-radius: 0.5rem;
+		background: var(--bg-surface);
+		margin-bottom: 1rem;
+	}
+
+	.cta-card h3 {
+		color: var(--accent);
+		font-size: 1rem;
+		margin-bottom: 0.25rem;
+	}
+
+	.cta-card p {
+		color: var(--text-muted);
+		font-size: 0.875rem;
+		margin-bottom: 0.75rem;
+		line-height: 1.5;
+	}
+
+	.cta-link {
+		color: var(--accent);
+		font-size: 0.875rem;
 	}
 </style>

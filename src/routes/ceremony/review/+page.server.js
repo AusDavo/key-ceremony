@@ -75,6 +75,9 @@ export const actions = {
 		// Clear purge timer — completed users are not purged
 		setPurgeAfter.run(null, user.user_id);
 
+		// Only keep display data + descriptor (for vault).
+		// Sensitive ceremony details (keyHolders, signatures, recovery, etc.)
+		// are in the PDF — no reason to keep them on the server.
 		saveWorkflowData(
 			user.user_id,
 			{},
@@ -82,13 +85,7 @@ export const actions = {
 				ceremonyReference: result.ceremonyReference,
 				documentHash: result.documentHash,
 				descriptorHash: result.descriptorHash,
-				descriptorRaw: data.descriptorRaw,
-				descriptorParsed: data.descriptorParsed,
-				keyHolders: data.keyHolders,
-				signatures: data.signatures,
-				recoveryInstructions: data.recoveryInstructions,
-				signingChallenge: data.signingChallenge,
-				quorumAchieved
+				descriptorRaw: data.descriptorRaw
 			},
 			'completed',
 			user.workflow_state

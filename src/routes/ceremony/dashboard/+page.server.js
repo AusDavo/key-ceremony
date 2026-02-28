@@ -25,5 +25,13 @@ export const actions = {
 		const { user } = locals;
 		saveWorkflowData(user.user_id, {}, {}, 'registered');
 		throw redirect(303, '/ceremony/descriptor');
+	},
+
+	deleteDescriptor: async ({ locals }) => {
+		const { user } = locals;
+		const data = getWorkflowData(user);
+		const { descriptorRaw, ...rest } = data;
+		saveWorkflowData(user.user_id, {}, rest, 'completed', user.workflow_state);
+		return { descriptorDeleted: true };
 	}
 };
