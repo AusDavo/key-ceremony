@@ -4,8 +4,7 @@ export function load({ locals, url }) {
 	const { user } = locals;
 
 	if (user.workflow_state === 'completed'
-		&& !url.pathname.startsWith('/ceremony/dashboard')
-		&& !url.pathname.startsWith('/ceremony/download')) {
+		&& !url.pathname.startsWith('/ceremony/dashboard')) {
 		throw redirect(303, '/ceremony/dashboard');
 	}
 

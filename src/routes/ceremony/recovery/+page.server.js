@@ -1,5 +1,5 @@
 import { redirect, fail } from '@sveltejs/kit';
-import { getWorkflowData, saveWorkflowData, canAccessStep } from '$lib/server/workflow.js';
+import { getWorkflowBlob, saveWorkflowBlob, canAccessStep } from '$lib/server/workflow.js';
 
 export function load({ locals }) {
 	const { user } = locals;
@@ -7,14 +7,11 @@ export function load({ locals }) {
 		throw redirect(303, '/ceremony/key-holders');
 	}
 
-	const data = getWorkflowData(user);
-	const config = data.walletConfig;
+	const { encryptedBlob, iv } = getWorkflowBlob(user);
 
 	return {
-		quorumRequired: config.quorumRequired,
-		keyCount: config.keyCount,
-		walletType: config.walletType,
-		savedRecovery: data.recoveryInstructions || null
+		encryptedBlob,
+		iv
 	};
 }
 
@@ -23,20 +20,17 @@ export const actions = {
 		const { user } = locals;
 		const formData = await request.formData();
 
-		const recoveryInstructions = {
-			walletSoftware: formData.get('walletSoftware')?.toString().trim() || '',
-			descriptorStorage: formData.get('descriptorStorage')?.toString().trim() || '',
-			emergencySteps: formData.get('emergencySteps')?.toString().trim() || '',
-			emergencyContacts: formData.get('emergencyContacts')?.toString().trim() || '',
-			additionalNotes: formData.get('additionalNotes')?.toString().trim() || ''
-		};
+		const encryptedBlob = formData.get('encryptedBlob')?.toString();
+		const iv = formData.get('iv')?.toString();
 
-		const data = getWorkflowData(user);
+		if (!encryptedBlob || !iv) {
+			return fail(400, { error: 'Encryption error. Please try again.' });
+		}
 
-		saveWorkflowData(
+		saveWorkflowBlob(
 			user.user_id,
-			data,
-			{ recoveryInstructions },
+			Buffer.from(encryptedBlob, 'base64'),
+			iv,
 			'recovery',
 			user.workflow_state
 		);

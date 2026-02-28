@@ -24,8 +24,16 @@ export async function POST({ request, cookies }) {
 
 	const body = await request.json();
 
+	// Extract DEK data from the request (sent alongside the credential)
+	const { credential, wrappedDek, dekIv, keyCheck, keyCheckIv } = body;
+
 	try {
-		const result = await finishRegistration(sessionId, userId, body);
+		const result = await finishRegistration(sessionId, userId, credential, {
+			wrappedDek,
+			dekIv,
+			keyCheck,
+			keyCheckIv
+		});
 		cookies.delete('pending_user_id', { path: '/' });
 		cookies.set('user_id', result.userId, { path: '/', httpOnly: true, sameSite: 'strict', secure: true });
 		return json({ verified: true });

@@ -59,7 +59,11 @@ const migrations = [
 	'ALTER TABLE users ADD COLUMN encrypted_pdf BLOB',
 	'ALTER TABLE users ADD COLUMN pdf_iv TEXT',
 	'ALTER TABLE ceremonies ADD COLUMN encrypted_metadata BLOB',
-	'ALTER TABLE ceremonies ADD COLUMN metadata_iv TEXT'
+	'ALTER TABLE ceremonies ADD COLUMN metadata_iv TEXT',
+	'ALTER TABLE users ADD COLUMN key_check BLOB',
+	'ALTER TABLE users ADD COLUMN key_check_iv TEXT',
+	'ALTER TABLE passkey_credentials ADD COLUMN encrypted_dek BLOB',
+	'ALTER TABLE passkey_credentials ADD COLUMN dek_iv TEXT'
 ];
 
 for (const sql of migrations) {
@@ -95,26 +99,18 @@ export const purgeUser = db.prepare(`
   DELETE FROM users WHERE user_id = ?
 `);
 
-export const updateEncryptedPdf = db.prepare(`
-  UPDATE users SET encrypted_pdf = ?, pdf_iv = ? WHERE user_id = ?
-`);
-
-export const getEncryptedPdf = db.prepare(`
-  SELECT encrypted_pdf, pdf_iv FROM users WHERE user_id = ?
-`);
-
-export const clearEncryptedPdf = db.prepare(`
-  UPDATE users SET encrypted_pdf = NULL, pdf_iv = NULL WHERE user_id = ?
-`);
-
 export const getExpiredUsers = db.prepare(`
   SELECT user_id FROM users WHERE purge_after IS NOT NULL AND purge_after < datetime('now')
 `);
 
+export const updateKeyCheck = db.prepare(`
+  UPDATE users SET key_check = ?, key_check_iv = ? WHERE user_id = ?
+`);
+
 // Passkey credentials
 export const addCredential = db.prepare(`
-  INSERT INTO passkey_credentials (credential_id, user_id, public_key, counter, transports)
-  VALUES (?, ?, ?, ?, ?)
+  INSERT INTO passkey_credentials (credential_id, user_id, public_key, counter, transports, encrypted_dek, dek_iv)
+  VALUES (?, ?, ?, ?, ?, ?, ?)
 `);
 
 export const getCredentialsByUser = db.prepare(`
@@ -137,18 +133,8 @@ export const countCredentialsByUser = db.prepare(`
   SELECT COUNT(*) as count FROM passkey_credentials WHERE user_id = ?
 `);
 
-// Ceremonies
-export const insertCeremony = db.prepare(`
-  INSERT INTO ceremonies (ceremony_id, user_id, ceremony_date, descriptor_hash, document_hash, encrypted_metadata, metadata_iv)
-  VALUES (?, ?, ?, '', ?, ?, ?)
-`);
-
-export const getCeremonyByHash = db.prepare(`
-  SELECT * FROM ceremonies WHERE document_hash = ?
-`);
-
-export const getCeremonyById = db.prepare(`
-  SELECT * FROM ceremonies WHERE ceremony_id = ?
+export const getCredentialDek = db.prepare(`
+  SELECT encrypted_dek, dek_iv FROM passkey_credentials WHERE credential_id = ?
 `);
 
 // Settings

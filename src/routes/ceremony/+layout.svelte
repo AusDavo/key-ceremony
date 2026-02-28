@@ -1,15 +1,18 @@
 <script>
+	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
+	import { hasDek } from '$lib/crypto.js';
+
 	let { data, children } = $props();
 
 	const steps = [
-		{ id: 'descriptor', label: 'Descriptor', state: 'registered' },
-		{ id: 'key-holders', label: 'Key Holders', state: 'descriptor' },
-		{ id: 'verification', label: 'Verification', state: 'key_holders' },
-		{ id: 'recovery', label: 'Recovery', state: 'verified' },
+		{ id: 'setup', label: 'Setup', state: 'registered' },
+		{ id: 'key-holders', label: 'Key Holders', state: 'setup' },
+		{ id: 'recovery', label: 'Recovery', state: 'key_holders' },
 		{ id: 'review', label: 'Review', state: 'recovery' }
 	];
 
-	const stateOrder = ['registered', 'descriptor', 'key_holders', 'verification', 'verified', 'recovery', 'review', 'completed'];
+	const stateOrder = ['registered', 'setup', 'key_holders', 'recovery', 'review', 'completed'];
 
 	function stepStatus(stepState) {
 		const current = stateOrder.indexOf(data.workflowState);
@@ -18,6 +21,13 @@
 		if (current === required) return 'current';
 		return 'locked';
 	}
+
+	// Check DEK availability — redirect to login if not available
+	onMount(() => {
+		if (browser && data.workflowState !== 'completed' && !hasDek()) {
+			window.location.href = '/?login';
+		}
+	});
 </script>
 
 <div class="wizard-layout">

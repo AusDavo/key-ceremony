@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
-import { getWorkflowData, saveWorkflowData } from '$lib/server/workflow.js';
 import { isDonationsEnabled } from '$lib/server/donation.js';
+import { updateEncryptedBlob, updateWorkflowState } from '$lib/server/db.js';
 
 export function load({ locals }) {
 	const { user } = locals;
@@ -8,20 +8,26 @@ export function load({ locals }) {
 		throw redirect(303, '/ceremony/setup');
 	}
 
-	const data = getWorkflowData(user);
+	// The ceremony reference is stored as a plain JSON blob after completion
+	let ceremonyReference = null;
+	if (user.encrypted_blob && user.iv === 'plain') {
+		try {
+			const data = JSON.parse(Buffer.from(user.encrypted_blob).toString());
+			ceremonyReference = data.ceremonyReference;
+		} catch { /* ignore */ }
+	}
 
 	return {
-		ceremonyReference: data.ceremonyReference,
-		documentHash: data.documentHash,
-		donationsEnabled: isDonationsEnabled(),
-		hasPdf: !!(user.encrypted_pdf && user.pdf_iv)
+		ceremonyReference,
+		donationsEnabled: isDonationsEnabled()
 	};
 }
 
 export const actions = {
 	reset: async ({ locals }) => {
 		const { user } = locals;
-		saveWorkflowData(user.user_id, {}, {}, 'registered');
+		updateEncryptedBlob.run(null, null, user.user_id);
+		updateWorkflowState.run('registered', user.user_id);
 		throw redirect(303, '/ceremony/setup');
 	}
 };

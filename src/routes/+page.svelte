@@ -1,6 +1,11 @@
 <script>
 	import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 	import { onMount } from 'svelte';
+	import {
+		deriveKeyFromPrf, generateDek, wrapDek, unwrapDek,
+		encryptTestValue, storeDek, getPrfSalt
+	} from '$lib/crypto.js';
+
 	let status = $state('');
 	let error = $state('');
 
@@ -19,25 +24,129 @@
 			const options = await optionsResp.json();
 
 			status = 'Waiting for passkey...';
-			const credential = await startRegistration({ optionsJSON: options });
 
+			// Request PRF evaluation during registration
+			const salt = getPrfSalt();
+			const optionsWithPrf = {
+				...options,
+				extensions: {
+					...options.extensions,
+					prf: { eval: { first: salt } }
+				}
+			};
+
+			const credential = await startRegistration({ optionsJSON: optionsWithPrf });
+
+			// Check PRF support
+			const prfResult = credential.clientExtensionResults?.prf;
+			if (!prfResult?.enabled) {
+				error = 'Your passkey does not support PRF encryption. Use the blank template instead.';
+				status = '';
+				return;
+			}
+
+			// Complete registration on server first (creates user + credential)
 			status = 'Verifying...';
 			const verifyResp = await fetch('/auth/register', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(credential)
+				body: JSON.stringify({ credential })
 			});
 
 			const result = await verifyResp.json();
-			if (result.verified) {
-				window.location.href = '/ceremony/setup';
-			} else {
+			if (!result.verified) {
 				error = result.error || 'Registration failed';
+				status = '';
+				return;
 			}
+
+			// Now derive the encryption key
+			status = 'Setting up encryption...';
+
+			let prfOutput = prfResult.results?.first;
+
+			// If PRF output wasn't available at registration, authenticate to get it
+			if (!prfOutput) {
+				prfOutput = await authenticateForPrf(credential.id);
+			}
+
+			if (!prfOutput) {
+				error = 'Failed to derive encryption key from passkey. Use the blank template instead.';
+				status = '';
+				return;
+			}
+
+			// Derive KEK from PRF output, generate random DEK, wrap it
+			const kek = await deriveKeyFromPrf(prfOutput);
+			const dek = await generateDek();
+			const { wrappedDek, dekIv } = await wrapDek(dek, kek);
+			const { keyCheck, keyCheckIv } = await encryptTestValue(dek);
+
+			// Send wrapped DEK to server (user is now registered and authenticated)
+			const setupResp = await fetch('/auth/setup-encryption', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					credentialId: credential.id,
+					wrappedDek,
+					dekIv,
+					keyCheck,
+					keyCheckIv
+				})
+			});
+
+			const setupResult = await setupResp.json();
+			if (setupResult.error) {
+				error = setupResult.error;
+				status = '';
+				return;
+			}
+
+			await storeDek(dek);
+			window.location.href = '/ceremony/setup';
 		} catch (err) {
-			error = err.message;
+			if (err.name !== 'NotAllowedError') {
+				error = err.message;
+			}
 		} finally {
 			status = '';
+		}
+	}
+
+	/**
+	 * Authenticate with a specific credential to get PRF output.
+	 * Used when PRF evaluation during registration isn't supported.
+	 */
+	async function authenticateForPrf(credentialId) {
+		try {
+			const authOptionsResp = await fetch('/auth/login');
+			const authOptions = await authOptionsResp.json();
+
+			const salt = getPrfSalt();
+			const authOptionsWithPrf = {
+				...authOptions,
+				extensions: {
+					...authOptions.extensions,
+					prf: { eval: { first: salt } }
+				},
+				allowCredentials: [{
+					id: credentialId,
+					type: 'public-key'
+				}]
+			};
+
+			const authCredential = await startAuthentication({ optionsJSON: authOptionsWithPrf });
+
+			// Verify on server to keep counter in sync
+			await fetch('/auth/login', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(authCredential)
+			});
+
+			return authCredential.clientExtensionResults?.prf?.results?.first || null;
+		} catch {
+			return null;
 		}
 	}
 
@@ -49,8 +158,18 @@
 			const optionsResp = await fetch('/auth/login');
 			const options = await optionsResp.json();
 
+			// Add PRF evaluation extension to authentication options
+			const salt = getPrfSalt();
+			const optionsWithPrf = {
+				...options,
+				extensions: {
+					...options.extensions,
+					prf: { eval: { first: salt } }
+				}
+			};
+
 			status = 'Waiting for passkey...';
-			const credential = await startAuthentication({ optionsJSON: options });
+			const credential = await startAuthentication({ optionsJSON: optionsWithPrf });
 
 			status = 'Verifying...';
 			const verifyResp = await fetch('/auth/login', {
@@ -61,12 +180,25 @@
 
 			const result = await verifyResp.json();
 			if (result.verified) {
+				// Derive KEK and unwrap DEK
+				const prfOutput = credential.clientExtensionResults?.prf?.results?.first;
+				if (prfOutput && result.wrappedDek && result.dekIv) {
+					const kek = await deriveKeyFromPrf(prfOutput);
+					const dek = await unwrapDek(result.wrappedDek, result.dekIv, kek);
+					await storeDek(dek);
+				} else if (result.wrappedDek) {
+					error = 'Your browser did not return PRF output. Please try a different browser or authenticator.';
+					return;
+				}
+				// If no wrappedDek exists (legacy user without PRF), proceed without encryption
 				window.location.href = result.redirectTo || '/ceremony/setup';
 			} else {
 				error = result.error || 'Login failed';
 			}
 		} catch (err) {
-			error = err.message;
+			if (err.name !== 'NotAllowedError') {
+				error = err.message;
+			}
 		} finally {
 			status = '';
 		}
@@ -98,12 +230,10 @@
 	</div>
 
 	<div class="privacy">
-		<p>No wallet descriptor, seed phrases, or private keys are entered. No sensitive wallet data touches the server. All data encrypted at rest. No tracking, no analytics, no third-party scripts. <a href="https://github.com/AusDavo/key-ceremony">Open source</a> and self-hostable.</p>
+		<p>No wallet descriptor, seed phrases, or private keys are entered. All ceremony data is encrypted in your browser before reaching the server. The server stores only opaque encrypted blobs. No tracking, no analytics, no third-party scripts. <a href="https://github.com/AusDavo/key-ceremony">Open source</a> and self-hostable.</p>
 	</div>
 
 	<div class="features">
-		<a href="/verify">Verify an existing ceremony record</a>
-		<span class="sep">&middot;</span>
 		<a href="/key-ceremony-blank-template.pdf">Download blank template (PDF)</a>
 	</div>
 
@@ -112,7 +242,7 @@
 		<button class="secondary" onclick={login}>Sign In</button>
 	</div>
 
-	<p class="passkey-hint">No email or password required — secured with passkeys.</p>
+	<p class="passkey-hint">No email or password required — secured with passkeys. Requires a PRF-capable authenticator (YubiKey, Windows Hello, iCloud Keychain).</p>
 
 	{#if status}
 		<p class="status">{status}</p>
@@ -234,11 +364,6 @@
 
 	.features a:hover {
 		color: var(--accent);
-	}
-
-	.features .sep {
-		color: var(--border);
-		margin: 0 0.25rem;
 	}
 
 	.auth-buttons {

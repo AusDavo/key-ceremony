@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { startLogin, finishLogin } from '$lib/server/auth.js';
-import { getUser } from '$lib/server/db.js';
+import { getUser, getCredentialDek } from '$lib/server/db.js';
 import { getResumeUrl } from '$lib/server/workflow.js';
 
 export async function GET({ cookies }) {
@@ -25,8 +25,22 @@ export async function POST({ request, cookies }) {
 	try {
 		const result = await finishLogin(sessionId, body);
 		cookies.set('user_id', result.userId, { path: '/', httpOnly: true, sameSite: 'strict', secure: true });
-		const redirectTo = getResumeUrl(getUser.get(result.userId)?.workflow_state);
-		return json({ verified: true, redirectTo });
+
+		const user = getUser.get(result.userId);
+		const redirectTo = getResumeUrl(user?.workflow_state);
+
+		// Return the wrapped DEK for the authenticating credential
+		const dekRow = getCredentialDek.get(result.credentialId);
+		const wrappedDek = dekRow?.encrypted_dek
+			? Buffer.from(dekRow.encrypted_dek).toString('base64')
+			: null;
+
+		return json({
+			verified: true,
+			redirectTo,
+			wrappedDek,
+			dekIv: dekRow?.dek_iv || null
+		});
 	} catch (err) {
 		return json({ error: err.message }, { status: 400 });
 	}

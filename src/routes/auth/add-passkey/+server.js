@@ -22,9 +22,13 @@ export async function POST({ request, cookies }) {
 	}
 
 	const body = await request.json();
+	const { credential, wrappedDek, dekIv } = body;
 
 	try {
-		const result = await finishAddPasskey(sessionId, userId, body);
+		const result = await finishAddPasskey(sessionId, userId, credential, {
+			wrappedDek,
+			dekIv
+		});
 		return json({ verified: true });
 	} catch (err) {
 		return json({ error: err.message }, { status: 400 });

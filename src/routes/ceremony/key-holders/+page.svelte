@@ -1,7 +1,16 @@
 <script>
-	import { enhance } from '$app/forms';
+	import { getDek, encryptBlob, decryptBlob } from '$lib/crypto.js';
 
 	let { data, form } = $props();
+
+	let loading = $state(true);
+	let submitting = $state(false);
+	let ceremonyData = $state({});
+
+	// Derived from decrypted data
+	let keyCount = $derived(ceremonyData.walletConfig?.keyCount || 0);
+	let quorumRequired = $derived(ceremonyData.walletConfig?.quorumRequired || 0);
+	let walletType = $derived(ceremonyData.walletConfig?.walletType || '');
 
 	function newHolder() {
 		return {
@@ -41,9 +50,29 @@
 		return [newHolder()];
 	}
 
-	let keyHolders = $state(
-		Array.from({ length: data.keyCount }, (_, i) => loadSaved(data.savedKeyHolders?.[i]))
-	);
+	let keyHolders = $state([]);
+
+	// Decrypt on mount
+	$effect(() => {
+		if (data.encryptedBlob && data.iv) {
+			getDek().then(dek => {
+				if (dek) {
+					decryptBlob(data.encryptedBlob, data.iv, dek).then(d => {
+						ceremonyData = d;
+						const kc = d.walletConfig?.keyCount || 0;
+						keyHolders = Array.from({ length: kc }, (_, i) =>
+							loadSaved(d.keyHolders?.[i])
+						);
+						loading = false;
+					}).catch(() => { loading = false; });
+				} else {
+					loading = false;
+				}
+			});
+		} else {
+			loading = false;
+		}
+	});
 
 	function addHolder(keyIndex) {
 		keyHolders[keyIndex] = [...keyHolders[keyIndex], newHolder()];
@@ -53,100 +82,144 @@
 		keyHolders[keyIndex] = keyHolders[keyIndex].filter((_, j) => j !== holderIndex);
 	}
 
-	const allNamed = $derived(keyHolders.every(holders => holders.length > 0 && holders[0].name.trim()));
+	const allNamed = $derived(keyHolders.length > 0 && keyHolders.every(holders => holders.length > 0 && holders[0].name.trim()));
+
+	async function handleSubmit(event) {
+		event.preventDefault();
+		submitting = true;
+
+		try {
+			const dek = await getDek();
+			if (!dek) {
+				window.location.href = '/?login';
+				return;
+			}
+
+			// Validate each key has at least one named holder
+			for (let i = 0; i < keyCount; i++) {
+				const holders = keyHolders[i];
+				if (!holders || holders.length === 0 || !holders[0].name.trim()) {
+					submitting = false;
+					return;
+				}
+			}
+
+			const updated = {
+				...ceremonyData,
+				keyHolders: Object.fromEntries(keyHolders.map((holders, i) => [i, holders]))
+			};
+
+			const { ciphertext, iv } = await encryptBlob(updated, dek);
+
+			const formEl = event.target;
+			formEl.querySelector('[name="encryptedBlob"]').value = ciphertext;
+			formEl.querySelector('[name="iv"]').value = iv;
+			formEl.submit();
+		} catch (err) {
+			submitting = false;
+		}
+	}
 </script>
 
 <h2>Key Holders</h2>
-<p>Identify who holds each key in your {data.quorumRequired}-of-{data.keyCount} multisig wallet.</p>
 
-<div class="wallet-summary">
-	{#if data.walletType}
-		<span class="wallet-type">{data.walletType}</span>
-	{/if}
-	<span class="quorum">{data.quorumRequired}-of-{data.keyCount} multisig</span>
-</div>
+{#if loading}
+	<p class="status">Decrypting your data...</p>
+{:else if keyCount === 0}
+	<p class="error">No wallet configuration found. <a href="/ceremony/setup">Go back to setup.</a></p>
+{:else}
+	<p>Identify who holds each key in your {quorumRequired}-of-{keyCount} multisig wallet.</p>
 
-{#if form?.error}
-	<p class="error">{form.error}</p>
-{/if}
-
-<form method="POST" use:enhance>
-	<input type="hidden" name="keyHolders" value={JSON.stringify(
-		Object.fromEntries(keyHolders.map((holders, i) => [i, holders]))
-	)} />
-
-	<div class="key-list">
-		{#each Array.from({ length: data.keyCount }) as _, i}
-			<div class="key-card">
-				<div class="key-header">
-					<span class="key-label">Key {i + 1}</span>
-				</div>
-
-				{#each keyHolders[i] as kh, j}
-					<div class="holder-section" class:additional={j > 0}>
-						{#if j > 0}
-							<div class="holder-divider">
-								<span>Holder {j + 1}</span>
-								<button type="button" class="remove-holder" onclick={() => removeHolder(i, j)}>Remove</button>
-							</div>
-						{/if}
-
-						<div class="fields">
-							<label>
-								<span>Name {#if j === 0}<span class="required">*</span>{/if}</span>
-								<input type="text" placeholder="e.g. David Pinkerton" bind:value={kh.name} required={j === 0} />
-							</label>
-
-							<label>
-								<span>Role</span>
-								<select bind:value={kh.role}>
-									{#each data.roleOptions as role}
-										<option value={role}>{role}</option>
-									{/each}
-								</select>
-							</label>
-
-							{#if kh.role === 'Custom'}
-								<label>
-									<span>Custom Role</span>
-									<input type="text" placeholder="e.g. Estate Executor" bind:value={kh.customRole} />
-								</label>
-							{/if}
-
-							<label>
-								<span>Device Type</span>
-								<select bind:value={kh.deviceType}>
-									{#each data.deviceTypes as device}
-										<option value={device}>{device}</option>
-									{/each}
-								</select>
-							</label>
-
-							<label>
-								<span>Key Fingerprint (optional)</span>
-								<input type="text" placeholder="e.g. 73c5da0a" bind:value={kh.fingerprint} maxlength="8" />
-							</label>
-
-							<label>
-								<span>Device Storage Location</span>
-								<input type="text" placeholder="e.g. Home safe, Bank safe deposit box" bind:value={kh.deviceLocation} />
-							</label>
-
-							<label>
-								<span>Seed Backup Location (optional)</span>
-								<input type="text" placeholder="e.g. Fireproof safe at home" bind:value={kh.seedBackupLocation} />
-							</label>
-						</div>
-					</div>
-				{/each}
-
-				<button type="button" class="add-holder" onclick={() => addHolder(i)}>+ Add another holder for this key</button>
-			</div>
-		{/each}
+	<div class="wallet-summary">
+		{#if walletType}
+			<span class="wallet-type">{walletType}</span>
+		{/if}
+		<span class="quorum">{quorumRequired}-of-{keyCount} multisig</span>
 	</div>
 
-	<button type="submit" disabled={!allNamed}>Continue to Recovery Instructions</button>
-</form>
+	{#if form?.error}
+		<p class="error">{form.error}</p>
+	{/if}
+
+	<form method="POST" onsubmit={handleSubmit}>
+		<input type="hidden" name="encryptedBlob" />
+		<input type="hidden" name="iv" />
+
+		<div class="key-list">
+			{#each Array.from({ length: keyCount }) as _, i}
+				<div class="key-card">
+					<div class="key-header">
+						<span class="key-label">Key {i + 1}</span>
+					</div>
+
+					{#each keyHolders[i] as kh, j}
+						<div class="holder-section" class:additional={j > 0}>
+							{#if j > 0}
+								<div class="holder-divider">
+									<span>Holder {j + 1}</span>
+									<button type="button" class="remove-holder" onclick={() => removeHolder(i, j)}>Remove</button>
+								</div>
+							{/if}
+
+							<div class="fields">
+								<label>
+									<span>Name {#if j === 0}<span class="required">*</span>{/if}</span>
+									<input type="text" placeholder="e.g. David Pinkerton" bind:value={kh.name} required={j === 0} />
+								</label>
+
+								<label>
+									<span>Role</span>
+									<select bind:value={kh.role}>
+										{#each data.roleOptions as role}
+											<option value={role}>{role}</option>
+										{/each}
+									</select>
+								</label>
+
+								{#if kh.role === 'Custom'}
+									<label>
+										<span>Custom Role</span>
+										<input type="text" placeholder="e.g. Estate Executor" bind:value={kh.customRole} />
+									</label>
+								{/if}
+
+								<label>
+									<span>Device Type</span>
+									<select bind:value={kh.deviceType}>
+										{#each data.deviceTypes as device}
+											<option value={device}>{device}</option>
+										{/each}
+									</select>
+								</label>
+
+								<label>
+									<span>Key Fingerprint (optional)</span>
+									<input type="text" placeholder="e.g. 73c5da0a" bind:value={kh.fingerprint} maxlength="8" />
+								</label>
+
+								<label>
+									<span>Device Storage Location</span>
+									<input type="text" placeholder="e.g. Home safe, Bank safe deposit box" bind:value={kh.deviceLocation} />
+								</label>
+
+								<label>
+									<span>Seed Backup Location (optional)</span>
+									<input type="text" placeholder="e.g. Fireproof safe at home" bind:value={kh.seedBackupLocation} />
+								</label>
+							</div>
+						</div>
+					{/each}
+
+					<button type="button" class="add-holder" onclick={() => addHolder(i)}>+ Add another holder for this key</button>
+				</div>
+			{/each}
+		</div>
+
+		<button type="submit" disabled={!allNamed || submitting}>
+			{submitting ? 'Encrypting...' : 'Continue to Recovery Instructions'}
+		</button>
+	</form>
+{/if}
 
 <style>
 	.wallet-summary {
@@ -313,5 +386,13 @@
 		border: 1px solid var(--danger);
 		border-radius: 0.375rem;
 		background: rgba(239, 68, 68, 0.1);
+	}
+
+	.error a {
+		color: var(--accent);
+	}
+
+	.status {
+		color: var(--accent);
 	}
 </style>

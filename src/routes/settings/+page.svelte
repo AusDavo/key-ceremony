@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { startRegistration } from '@simplewebauthn/browser';
+	import { getDek, deriveKeyFromPrf, wrapDek, getPrfSalt } from '$lib/crypto.js';
 
 	let { data, form } = $props();
 	let adding = $state(false);
@@ -17,10 +18,57 @@
 
 			const credential = await startRegistration({ optionsJSON: options });
 
+			// Check PRF support on the new passkey
+			const prfResult = credential.clientExtensionResults?.prf;
+			if (!prfResult?.enabled) {
+				throw new Error('This passkey does not support PRF encryption. Please use a PRF-capable authenticator.');
+			}
+
+			// Get the current session DEK
+			const dek = await getDek();
+			if (!dek) {
+				throw new Error('Encryption key not available. Please sign in again.');
+			}
+
+			// Evaluate PRF with the new passkey to derive its KEK
+			// We need to authenticate with this new passkey to get PRF output
+			// Since it was just registered, do a quick auth
+			const authOptionsRes = await fetch('/auth/login');
+			const authOptions = await authOptionsRes.json();
+			const salt = getPrfSalt();
+
+			const { startAuthentication } = await import('@simplewebauthn/browser');
+			const authOptionsWithPrf = {
+				...authOptions,
+				extensions: {
+					...authOptions.extensions,
+					prf: { eval: { first: salt } }
+				},
+				allowCredentials: [{
+					id: credential.id,
+					type: 'public-key'
+				}]
+			};
+
+			const authCredential = await startAuthentication({ optionsJSON: authOptionsWithPrf });
+			const prfOutput = authCredential.clientExtensionResults?.prf?.results?.first;
+
+			if (!prfOutput) {
+				throw new Error('Failed to derive encryption key from new passkey.');
+			}
+
+			// Wrap the existing DEK with the new passkey's KEK
+			const kek = await deriveKeyFromPrf(prfOutput);
+			const { wrappedDek, dekIv } = await wrapDek(dek, kek);
+
 			const verifyRes = await fetch('/auth/add-passkey', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(credential)
+				body: JSON.stringify({
+					credential,
+					wrappedDek,
+					dekIv
+				})
 			});
 			const result = await verifyRes.json();
 			if (result.error) throw new Error(result.error);
@@ -80,10 +128,10 @@
 
 	<div class="section danger-zone">
 		<h3>Danger Zone</h3>
-		<p>Deleting your account will permanently remove all data including ceremony records. This cannot be undone.</p>
+		<p>Deleting your account will permanently remove all data. This cannot be undone.</p>
 		<form method="POST" action="?/deleteAccount" use:enhance>
 			<button type="submit" class="delete-account-btn" onclick={(e) => {
-				if (!confirm('Are you sure you want to delete your account? All ceremony records and passkeys will be permanently deleted.')) {
+				if (!confirm('Are you sure you want to delete your account? All data and passkeys will be permanently deleted.')) {
 					e.preventDefault();
 				}
 			}}>Delete Account</button>

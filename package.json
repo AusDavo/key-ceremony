@@ -21,6 +21,7 @@
 		"@simplewebauthn/server": "^13.2.2",
 		"@sveltejs/adapter-node": "^5.5.2",
 		"better-sqlite3": "^12.6.2",
-		"node-cron": "^4.2.1"
+		"node-cron": "^4.2.1",
+		"pdfmake": "^0.3.5"
 	}
 }

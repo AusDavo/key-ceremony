@@ -1,40 +1,22 @@
 <script>
 	import { enhance } from '$app/forms';
-	import { invalidateAll } from '$app/navigation';
 
 	let { data } = $props();
-
-	async function downloadPdf() {
-		const link = document.createElement('a');
-		link.href = '/ceremony/download';
-		link.download = '';
-		document.body.appendChild(link);
-		link.click();
-		link.remove();
-		// Wait briefly for the download to start, then refresh data
-		await new Promise(r => setTimeout(r, 1000));
-		await invalidateAll();
-	}
 </script>
 
 <h2>Ceremony Complete</h2>
 
 <div class="ceremony-card">
 	<div class="ceremony-details">
-		<dl>
-			<dt>Reference</dt>
-			<dd>{data.ceremonyReference}</dd>
-			<dt>Document SHA-256</dt>
-			<dd><code>{data.documentHash}</code></dd>
-		</dl>
+		{#if data.ceremonyReference}
+			<dl>
+				<dt>Reference</dt>
+				<dd>{data.ceremonyReference}</dd>
+			</dl>
+		{/if}
 	</div>
 
-	{#if data.hasPdf}
-		<p class="download-notice">Your ceremony PDF is available for a single download. It will be permanently deleted from the server once downloaded.</p>
-		<button class="download-button" onclick={downloadPdf}>Download Ceremony PDF</button>
-	{:else}
-		<p class="downloaded-notice">Your ceremony PDF has been downloaded and deleted from the server.</p>
-	{/if}
+	<p class="privacy-notice">Your ceremony PDF was generated in your browser. No ceremony data was stored on the server.</p>
 </div>
 
 <div class="next-steps">
@@ -95,35 +77,7 @@
 		margin: 0;
 	}
 
-	dd code {
-		font-size: 0.75rem;
-		word-break: break-all;
-	}
-
-	.download-button {
-		display: inline-block;
-		padding: 0.875rem 2rem;
-		background: var(--accent);
-		color: #000;
-		border: none;
-		border-radius: 0.375rem;
-		font-weight: bold;
-		font-size: 1rem;
-		cursor: pointer;
-		margin: 1rem 0;
-	}
-
-	.download-button:hover {
-		background: var(--accent-hover);
-	}
-
-	.download-notice {
-		font-size: 0.85rem;
-		color: var(--warning, #e2a308);
-		margin-bottom: 0.5rem;
-	}
-
-	.downloaded-notice {
+	.privacy-notice {
 		font-size: 0.85rem;
 		color: var(--text-muted);
 		font-style: italic;

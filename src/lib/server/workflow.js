@@ -1,5 +1,4 @@
 import { updateWorkflowState, updateEncryptedBlob } from './db.js';
-import { encryptForUser, decryptForUser } from './encryption.js';
 
 const WORKFLOW_STATES = [
 	'registered',
@@ -11,23 +10,31 @@ const WORKFLOW_STATES = [
 ];
 
 /**
- * Get the current workflow data (decrypted) for a user.
+ * Get the raw encrypted blob for a user (no decryption — that happens client-side).
+ * @returns {{ encryptedBlob: string|null, iv: string|null }}
  */
-export function getWorkflowData(user) {
+export function getWorkflowBlob(user) {
 	if (!user.encrypted_blob || !user.iv) {
-		return {};
+		return { encryptedBlob: null, iv: null };
 	}
-	return decryptForUser(user.encrypted_blob, user.iv, user.user_id);
+	return {
+		encryptedBlob: Buffer.from(user.encrypted_blob).toString('base64'),
+		iv: user.iv
+	};
 }
 
 /**
- * Save workflow data (encrypted) and optionally advance the state.
- * State never regresses — if newState is earlier than current, current is kept.
+ * Save an opaque encrypted blob and optionally advance the workflow state.
+ * The server never decrypts this — it's encrypted client-side with the user's DEK.
+ *
+ * @param {string} userId
+ * @param {Buffer|null} encryptedBlob - Raw encrypted bytes (or null to clear)
+ * @param {string|null} iv - Base64 IV string
+ * @param {string} newState - Target workflow state
+ * @param {string} [currentState] - Current state (for high-water-mark check)
  */
-export function saveWorkflowData(userId, currentData, newData, newState, currentState) {
-	const merged = { ...currentData, ...newData };
-	const { encrypted, iv } = encryptForUser(merged, userId);
-	updateEncryptedBlob.run(encrypted, iv, userId);
+export function saveWorkflowBlob(userId, encryptedBlob, iv, newState, currentState) {
+	updateEncryptedBlob.run(encryptedBlob, iv, userId);
 
 	if (newState) {
 		const newIndex = WORKFLOW_STATES.indexOf(newState);
@@ -36,8 +43,6 @@ export function saveWorkflowData(userId, currentData, newData, newState, current
 			updateWorkflowState.run(newState, userId);
 		}
 	}
-
-	return merged;
 }
 
 /**

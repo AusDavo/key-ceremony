@@ -12,7 +12,8 @@ import {
 	getCredentialsByUser,
 	getCredentialById,
 	updateCredentialCounter,
-	setPurgeAfter
+	setPurgeAfter,
+	updateKeyCheck
 } from './db.js';
 
 import { env } from '$env/dynamic/private';
@@ -62,6 +63,7 @@ function getChallenge(sessionId) {
 
 /**
  * Generate registration options for a new user.
+ * Includes PRF extension hint so the authenticator knows to enable PRF.
  */
 export async function startRegistration(sessionId) {
 	const userId = randomUUID();
@@ -75,6 +77,9 @@ export async function startRegistration(sessionId) {
 		authenticatorSelection: {
 			residentKey: 'required',
 			userVerification: 'preferred'
+		},
+		extensions: {
+			prf: {}
 		}
 	});
 
@@ -85,8 +90,10 @@ export async function startRegistration(sessionId) {
 
 /**
  * Verify registration response and create the user + credential.
+ * Accepts optional wrappedDek/dekIv for PRF-encrypted DEK storage,
+ * and keyCheck/keyCheckIv for DEK verification.
  */
-export async function finishRegistration(sessionId, userId, response) {
+export async function finishRegistration(sessionId, userId, response, dekData) {
 	const expectedChallenge = getChallenge(sessionId);
 	if (!expectedChallenge) {
 		throw new Error('Registration challenge expired or not found');
@@ -110,12 +117,23 @@ export async function finishRegistration(sessionId, userId, response) {
 	// Set purge timer for abandoned accounts (90 days); cleared on ceremony completion
 	setPurgeAfter.run(new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(), userId);
 
+	// Store key check on user if provided
+	if (dekData?.keyCheck && dekData?.keyCheckIv) {
+		updateKeyCheck.run(
+			Buffer.from(dekData.keyCheck, 'base64'),
+			dekData.keyCheckIv,
+			userId
+		);
+	}
+
 	addCredential.run(
 		credential.id,
 		userId,
 		Buffer.from(credential.publicKey),
 		credential.counter,
-		JSON.stringify(credential.transports || [])
+		JSON.stringify(credential.transports || []),
+		dekData?.wrappedDek ? Buffer.from(dekData.wrappedDek, 'base64') : null,
+		dekData?.dekIv || null
 	);
 
 	return { verified: true, userId };
@@ -137,6 +155,7 @@ export async function startLogin(sessionId) {
 
 /**
  * Verify authentication response.
+ * Returns the credential ID along with userId so the client can fetch the wrapped DEK.
  */
 export async function finishLogin(sessionId, response) {
 	const expectedChallenge = getChallenge(sessionId);
@@ -172,7 +191,7 @@ export async function finishLogin(sessionId, response) {
 		credentialId
 	);
 
-	return { verified: true, userId: stored.user_id };
+	return { verified: true, userId: stored.user_id, credentialId };
 }
 
 /**
@@ -194,6 +213,9 @@ export async function startAddPasskey(sessionId, userId) {
 		authenticatorSelection: {
 			residentKey: 'required',
 			userVerification: 'preferred'
+		},
+		extensions: {
+			prf: {}
 		}
 	});
 
@@ -204,8 +226,9 @@ export async function startAddPasskey(sessionId, userId) {
 
 /**
  * Verify and add an additional passkey for an existing user.
+ * Accepts optional wrappedDek/dekIv for the new credential's wrapped DEK.
  */
-export async function finishAddPasskey(sessionId, userId, response) {
+export async function finishAddPasskey(sessionId, userId, response, dekData) {
 	const expectedChallenge = getChallenge(sessionId);
 	if (!expectedChallenge) {
 		throw new Error('Challenge expired or not found');
@@ -229,7 +252,9 @@ export async function finishAddPasskey(sessionId, userId, response) {
 		userId,
 		Buffer.from(credential.publicKey),
 		credential.counter,
-		JSON.stringify(credential.transports || [])
+		JSON.stringify(credential.transports || []),
+		dekData?.wrappedDek ? Buffer.from(dekData.wrappedDek, 'base64') : null,
+		dekData?.dekIv || null
 	);
 
 	return { verified: true };

@@ -1,24 +1,90 @@
 <script>
+	import { getDek, encryptBlob, decryptBlob } from '$lib/crypto.js';
+
 	let { data, form } = $props();
 
-	let keyCount = $state(data.savedConfig?.keyCount || 3);
-	let quorumRequired = $state(data.savedConfig?.quorumRequired || 2);
-	let walletType = $state(
-		data.walletTypes.includes(data.savedConfig?.walletType)
-			? data.savedConfig.walletType
-			: data.savedConfig?.walletType
-				? 'Other'
-				: data.walletTypes[0]
-	);
-	let customWalletType = $state(
-		data.walletTypes.includes(data.savedConfig?.walletType) ? '' : (data.savedConfig?.walletType || '')
-	);
+	let keyCount = $state(3);
+	let quorumRequired = $state(2);
+	let walletType = $state(data.walletTypes[0]);
+	let customWalletType = $state('');
+	let loading = $state(true);
+	let submitting = $state(false);
+
+	// Decrypt existing data on mount
+	$effect(() => {
+		if (data.encryptedBlob && data.iv) {
+			getDek().then(dek => {
+				if (dek) {
+					decryptBlob(data.encryptedBlob, data.iv, dek).then(d => {
+						if (d.walletConfig) {
+							keyCount = d.walletConfig.keyCount || 3;
+							quorumRequired = d.walletConfig.quorumRequired || 2;
+							if (data.walletTypes.includes(d.walletConfig.walletType)) {
+								walletType = d.walletConfig.walletType;
+							} else if (d.walletConfig.walletType) {
+								walletType = 'Other';
+								customWalletType = d.walletConfig.walletType;
+							}
+						}
+						loading = false;
+					}).catch(() => { loading = false; });
+				} else {
+					loading = false;
+				}
+			});
+		} else {
+			loading = false;
+		}
+	});
 
 	$effect(() => {
 		if (quorumRequired > keyCount) {
 			quorumRequired = keyCount;
 		}
 	});
+
+	async function handleSubmit(event) {
+		event.preventDefault();
+		submitting = true;
+
+		try {
+			const dek = await getDek();
+			if (!dek) {
+				window.location.href = '/?login';
+				return;
+			}
+
+			// Decrypt existing data to merge
+			let ceremonyData = {};
+			if (data.encryptedBlob && data.iv) {
+				try {
+					ceremonyData = await decryptBlob(data.encryptedBlob, data.iv, dek);
+				} catch { /* start fresh */ }
+			}
+
+			const walletConfig = {
+				keyCount,
+				quorumRequired,
+				walletType: walletType === 'Other' ? customWalletType : walletType
+			};
+
+			// If key count changed, reset key holders
+			if (ceremonyData.walletConfig && ceremonyData.walletConfig.keyCount !== keyCount) {
+				delete ceremonyData.keyHolders;
+			}
+
+			ceremonyData.walletConfig = walletConfig;
+
+			const { ciphertext, iv } = await encryptBlob(ceremonyData, dek);
+
+			const formEl = event.target;
+			formEl.querySelector('[name="encryptedBlob"]').value = ciphertext;
+			formEl.querySelector('[name="iv"]').value = iv;
+			formEl.submit();
+		} catch (err) {
+			submitting = false;
+		}
+	}
 </script>
 
 <h2>Wallet Setup</h2>
@@ -28,43 +94,52 @@
 	<p class="error">{form.error}</p>
 {/if}
 
-<form method="POST">
-	<div class="field-group">
-		<label>
-			<span>Number of keys <span class="required">*</span></span>
-			<input type="number" name="keyCount" min="1" max="15" bind:value={keyCount} required />
-			<span class="hint">How many keys are in this multisig wallet?</span>
-		</label>
+{#if loading}
+	<p class="status">Decrypting your data...</p>
+{:else}
+	<form method="POST" onsubmit={handleSubmit}>
+		<input type="hidden" name="encryptedBlob" />
+		<input type="hidden" name="iv" />
 
-		<label>
-			<span>Quorum required <span class="required">*</span></span>
-			<input type="number" name="quorumRequired" min="1" max={keyCount} bind:value={quorumRequired} required />
-			<span class="hint">How many keys are needed to sign a transaction? ({quorumRequired}-of-{keyCount})</span>
-		</label>
-
-		<label>
-			<span>Wallet type</span>
-			<select name="walletType" bind:value={walletType}>
-				{#each data.walletTypes as wt}
-					<option value={wt}>{wt}</option>
-				{/each}
-			</select>
-		</label>
-
-		{#if walletType === 'Other'}
+		<div class="field-group">
 			<label>
-				<span>Custom wallet type</span>
-				<input type="text" name="customWalletType" bind:value={customWalletType} placeholder="e.g. Custom Miniscript" />
+				<span>Number of keys <span class="required">*</span></span>
+				<input type="number" min="1" max="15" bind:value={keyCount} required />
+				<span class="hint">How many keys are in this multisig wallet?</span>
 			</label>
-		{/if}
-	</div>
 
-	<div class="summary">
-		<p>You are documenting a <strong>{quorumRequired}-of-{keyCount}</strong> multisig wallet{walletType && walletType !== 'Other' ? ` (${walletType})` : customWalletType ? ` (${customWalletType})` : ''}.</p>
-	</div>
+			<label>
+				<span>Quorum required <span class="required">*</span></span>
+				<input type="number" min="1" max={keyCount} bind:value={quorumRequired} required />
+				<span class="hint">How many keys are needed to sign a transaction? ({quorumRequired}-of-{keyCount})</span>
+			</label>
 
-	<button type="submit">Continue to Key Holders</button>
-</form>
+			<label>
+				<span>Wallet type</span>
+				<select bind:value={walletType}>
+					{#each data.walletTypes as wt}
+						<option value={wt}>{wt}</option>
+					{/each}
+				</select>
+			</label>
+
+			{#if walletType === 'Other'}
+				<label>
+					<span>Custom wallet type</span>
+					<input type="text" bind:value={customWalletType} placeholder="e.g. Custom Miniscript" />
+				</label>
+			{/if}
+		</div>
+
+		<div class="summary">
+			<p>You are documenting a <strong>{quorumRequired}-of-{keyCount}</strong> multisig wallet{walletType && walletType !== 'Other' ? ` (${walletType})` : customWalletType ? ` (${customWalletType})` : ''}.</p>
+		</div>
+
+		<button type="submit" disabled={submitting}>
+			{submitting ? 'Encrypting...' : 'Continue to Key Holders'}
+		</button>
+	</form>
+{/if}
 
 <style>
 	form {
@@ -146,11 +221,20 @@
 		background: var(--accent-hover);
 	}
 
+	button:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
 	.error {
 		color: var(--danger);
 		padding: 0.75rem;
 		border: 1px solid var(--danger);
 		border-radius: 0.375rem;
 		background: rgba(239, 68, 68, 0.1);
+	}
+
+	.status {
+		color: var(--accent);
 	}
 </style>
