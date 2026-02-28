@@ -195,7 +195,7 @@
 	{#each data.xpubs as xpub, i}
 		{@const signed = data.signatures.includes(String(i))}
 		{@const settings = xpubSettings[i]}
-		{@const holder = data.keyHolders[i]}
+		{@const holders = Array.isArray(data.keyHolders[i]) ? data.keyHolders[i] : data.keyHolders[i] ? [data.keyHolders[i]] : []}
 		<div class="xpub-card" class:signed>
 			<div class="xpub-header">
 				<span class="xpub-label">
@@ -208,13 +208,13 @@
 				{/if}
 			</div>
 
-			{#if holder}
+			{#each holders as holder}
 				<div class="holder-info">
 					<span>{holder.name}</span>
 					<span class="holder-role">{holder.role === 'Custom' ? holder.customRole : holder.role}</span>
 					<span class="holder-device">{holder.deviceType}</span>
 				</div>
-			{/if}
+			{/each}
 
 			<div class="xpub-body">
 				<div class="xpub-detail">
@@ -319,14 +319,19 @@
 <div class="proceed-section">
 	{#if data.quorumMet}
 		<p class="quorum-met">Quorum reached — {data.signatures.length} of {data.quorum.total} keys verified.</p>
-		<form method="POST" action="?/proceed" use:enhance>
-			<button type="submit" class="proceed-button">Continue to Recovery Instructions</button>
-		</form>
-	{:else}
+	{:else if data.signatures.length > 0}
 		<p class="quorum-pending">
 			{data.signatures.length} of {data.quorum.required} required signatures verified.
+			You can continue without meeting the full quorum.
+		</p>
+	{:else}
+		<p class="quorum-pending">
+			No keys verified yet. Verification is optional — you can continue without signing.
 		</p>
 	{/if}
+	<form method="POST" action="?/proceed" use:enhance>
+		<button type="submit" class="proceed-button">Continue to Recovery Instructions</button>
+	</form>
 </div>
 
 {#if qrModalIndex != null && qrScanUrls[qrModalIndex]}

@@ -43,29 +43,37 @@ function computeRating(quorumRequired, totalSigners, quorumAchieved) {
 }
 
 function buildKeyHolderRows(xpubs, keyHolders, signatures) {
-	return xpubs.map((xpub, i) => {
-		const holder = keyHolders[i] || keyHolders[String(i)] || {};
+	const rows = [];
+	for (let i = 0; i < xpubs.length; i++) {
+		const xpub = xpubs[i];
+		const raw = keyHolders[i] || keyHolders[String(i)];
+		const holderList = Array.isArray(raw) ? raw : (raw && raw.name) ? [raw] : [{}];
 		const signed = signatures && (signatures[i] != null || signatures[String(i)] != null);
 		const fp = xpub.xpubFingerprint !== 'unknown'
 			? `<code>${escapeHtml(xpub.xpubFingerprint)}</code>`
 			: '&mdash;';
-		const name = escapeHtml(holder.name || `Key ${i + 1}`);
-		const role = holder.role === 'Custom'
-			? escapeHtml(holder.customRole || '')
-			: escapeHtml(holder.role || '');
-		const device = escapeHtml(holder.deviceType || '');
 		const verifiedCell = signed
 			? '<td class="verified">Verified</td>'
 			: '<td class="not-verified">Not verified</td>';
 
-		return `      <tr>
-        <td>${fp}</td>
+		for (let j = 0; j < holderList.length; j++) {
+			const holder = holderList[j];
+			const name = escapeHtml(holder.name || `Key ${i + 1}`);
+			const role = holder.role === 'Custom'
+				? escapeHtml(holder.customRole || '')
+				: escapeHtml(holder.role || '');
+			const device = escapeHtml(holder.deviceType || '');
+
+			rows.push(`      <tr>
+        <td>${j === 0 ? fp : ''}</td>
         <td>${name}</td>
         <td>${role}</td>
         <td>${device}</td>
-        ${verifiedCell}
-      </tr>`;
-	}).join('\n');
+        ${j === 0 ? verifiedCell : '<td></td>'}
+      </tr>`);
+		}
+	}
+	return rows.join('\n');
 }
 
 function buildTechnicalRows(xpubs) {

@@ -47,14 +47,11 @@ export const actions = {
 			newData.shareTokens = null;
 			newData.keyHolders = null;
 			newData.quorumAchieved = null;
+			// Descriptor changed — force state reset since downstream data is invalidated
+			saveWorkflowData(user.user_id, {}, newData, 'descriptor');
+		} else {
+			saveWorkflowData(user.user_id, currentData, newData, 'descriptor', user.workflow_state);
 		}
-
-		saveWorkflowData(
-			user.user_id,
-			currentData,
-			newData,
-			'descriptor'
-		);
 
 		throw redirect(303, '/ceremony/key-holders');
 	}

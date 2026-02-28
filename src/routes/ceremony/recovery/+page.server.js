@@ -38,7 +38,8 @@ export const actions = {
 			user.user_id,
 			data,
 			{ recoveryInstructions },
-			'recovery'
+			'recovery',
+			user.workflow_state
 		);
 
 		throw redirect(303, '/ceremony/review');

@@ -11,7 +11,8 @@ import {
 	addCredential,
 	getCredentialsByUser,
 	getCredentialById,
-	updateCredentialCounter
+	updateCredentialCounter,
+	setPurgeAfter
 } from './db.js';
 
 import { env } from '$env/dynamic/private';
@@ -105,6 +106,10 @@ export async function finishRegistration(sessionId, userId, response) {
 	const { credential } = verification.registrationInfo;
 
 	createUser.run(userId);
+
+	// Set purge timer for abandoned accounts (90 days); cleared on ceremony completion
+	setPurgeAfter.run(new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(), userId);
+
 	addCredential.run(
 		credential.id,
 		userId,

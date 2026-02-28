@@ -1,39 +1,7 @@
 <script>
-	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
 
 	let { data } = $props();
-	let countdown = $state('');
-
-	function updateCountdown() {
-		if (!data.purgeAfter) {
-			countdown = '';
-			return;
-		}
-		const now = Date.now();
-		const purge = new Date(data.purgeAfter).getTime();
-		const diff = purge - now;
-
-		if (diff <= 0) {
-			countdown = 'Purge imminent';
-			return;
-		}
-
-		const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-		if (days >= 1) {
-			countdown = `${days} day${days !== 1 ? 's' : ''} remaining`;
-		} else {
-			const hours = Math.floor(diff / (1000 * 60 * 60));
-			const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-			countdown = `${hours}h ${mins}m remaining`;
-		}
-	}
-
-	onMount(() => {
-		updateCountdown();
-		const timer = setInterval(updateCountdown, 60000);
-		return () => clearInterval(timer);
-	});
 </script>
 
 <h2>Ceremony Complete</h2>
@@ -76,10 +44,7 @@
 </div>
 
 <div class="purge-notice">
-	{#if countdown}
-		<p>Your data will be automatically purged for privacy. <strong>{countdown}</strong> until deletion.</p>
-	{/if}
-	<p>Save your ceremony record — once purged, it cannot be recovered. The document's SHA-256 hash remains on file for verification.</p>
+	<p>Your ceremony data is stored encrypted on the server. You can start a new ceremony at any time, which will clear the current data. Save your PDF for your records.</p>
 </div>
 
 <div class="actions">
@@ -191,10 +156,6 @@
 		margin-bottom: 1.5rem;
 		font-size: 0.875rem;
 		color: var(--text-muted);
-	}
-
-	.purge-notice strong {
-		color: var(--accent);
 	}
 
 	.actions {

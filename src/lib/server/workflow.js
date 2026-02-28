@@ -24,14 +24,19 @@ export function getWorkflowData(user) {
 
 /**
  * Save workflow data (encrypted) and optionally advance the state.
+ * State never regresses — if newState is earlier than current, current is kept.
  */
-export function saveWorkflowData(userId, currentData, newData, newState) {
+export function saveWorkflowData(userId, currentData, newData, newState, currentState) {
 	const merged = { ...currentData, ...newData };
 	const { encrypted, iv } = encryptObject(merged);
 	updateEncryptedBlob.run(encrypted, iv, userId);
 
 	if (newState) {
-		updateWorkflowState.run(newState, userId);
+		const newIndex = WORKFLOW_STATES.indexOf(newState);
+		const currentIndex = currentState ? WORKFLOW_STATES.indexOf(currentState) : -1;
+		if (newIndex > currentIndex) {
+			updateWorkflowState.run(newState, userId);
+		}
 	}
 
 	return merged;

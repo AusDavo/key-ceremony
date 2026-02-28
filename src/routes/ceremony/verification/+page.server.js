@@ -168,20 +168,12 @@ export const actions = {
 	proceed: async ({ locals }) => {
 		const { user } = locals;
 		const data = getWorkflowData(user);
-		const parsed = data.descriptorParsed;
 		const signatures = data.signatures || {};
 		const signedCount = Object.keys(signatures).length;
-		const quorum = parsed.quorum || { required: 1, total: parsed.xpubs.length };
-
-		if (signedCount < quorum.required) {
-			return fail(400, {
-				error: `At least ${quorum.required} of ${quorum.total} signatures required. Currently have ${signedCount}.`
-			});
-		}
 
 		saveWorkflowData(user.user_id, data, {
 			quorumAchieved: signedCount
-		}, 'verified');
+		}, 'verified', user.workflow_state);
 
 		throw redirect(303, '/ceremony/recovery');
 	}

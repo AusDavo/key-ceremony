@@ -47,19 +47,27 @@
 		</div>
 		<div class="keyholder-list">
 			{#each data.descriptorParsed.xpubs as xpub, i}
-				{@const holder = data.keyHolders[i]}
+				{@const holders = Array.isArray(data.keyHolders[i]) ? data.keyHolders[i] : data.keyHolders[i] ? [data.keyHolders[i]] : [{ name: 'Unknown' }]}
 				{@const signed = data.signatures.includes(String(i))}
-				<div class="keyholder-row">
-					<span class="kh-fingerprint">{xpub.xpubFingerprint}</span>
-					<span class="kh-name">{holder?.name || 'Unknown'}</span>
-					<span class="kh-role">{holder?.role === 'Custom' ? holder?.customRole : holder?.role || ''}</span>
-					<span class="kh-device">{holder?.deviceType || ''}</span>
-					{#if signed}
-						<span class="kh-verified">Verified</span>
-					{:else}
-						<span class="kh-unverified">Not verified</span>
-					{/if}
-				</div>
+				{#each holders as holder, j}
+					<div class="keyholder-row">
+						{#if j === 0}
+							<span class="kh-fingerprint">{xpub.xpubFingerprint}</span>
+						{:else}
+							<span class="kh-fingerprint"></span>
+						{/if}
+						<span class="kh-name">{holder.name || 'Unknown'}</span>
+						<span class="kh-role">{holder.role === 'Custom' ? holder.customRole : holder.role || ''}</span>
+						<span class="kh-device">{holder.deviceType || ''}</span>
+						{#if j === 0}
+							{#if signed}
+								<span class="kh-verified">Verified</span>
+							{:else}
+								<span class="kh-unverified">Not verified</span>
+							{/if}
+						{/if}
+					</div>
+				{/each}
 			{/each}
 		</div>
 	</div>

@@ -14,7 +14,6 @@ export function load({ locals }) {
 		ceremonyReference: data.ceremonyReference,
 		documentHash: data.documentHash,
 		descriptorHash: data.descriptorHash,
-		purgeAfter: user.purge_after,
 		donationsEnabled: isDonationsEnabled(),
 		hasDescriptor: !!data.descriptorRaw
 	};

@@ -54,21 +54,31 @@ export const actions = {
 		const data = getWorkflowData(user);
 		const parsed = data.descriptorParsed;
 
-		// Validate each key has at least a name
+		// Validate each key has at least one holder with a name
 		for (let i = 0; i < parsed.xpubs.length; i++) {
-			const holder = keyHolders[i];
-			if (!holder || !holder.name || !holder.name.trim()) {
+			const holders = keyHolders[i];
+			if (!holders) {
 				return fail(400, {
 					error: `Please enter a name for Key ${i + 1} (${parsed.xpubs[i].xpubFingerprint}).`
 				});
 			}
+			// Support both array format and legacy single-holder format
+			const holderList = Array.isArray(holders) ? holders : [holders];
+			if (holderList.length === 0 || !holderList[0].name || !holderList[0].name.trim()) {
+				return fail(400, {
+					error: `Please enter a name for Key ${i + 1} (${parsed.xpubs[i].xpubFingerprint}).`
+				});
+			}
+			// Normalize to array format
+			keyHolders[i] = holderList;
 		}
 
 		saveWorkflowData(
 			user.user_id,
 			data,
 			{ keyHolders },
-			'key_holders'
+			'key_holders',
+			user.workflow_state
 		);
 
 		throw redirect(303, '/ceremony/verification');

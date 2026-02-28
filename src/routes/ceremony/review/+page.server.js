@@ -57,8 +57,8 @@ export const actions = {
 			result.documentHash
 		);
 
-		const purgeDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-		setPurgeAfter.run(purgeDate, user.user_id);
+		// Clear purge timer — completed users are not purged
+		setPurgeAfter.run(null, user.user_id);
 
 		saveWorkflowData(
 			user.user_id,
@@ -71,7 +71,8 @@ export const actions = {
 				descriptorRaw: data.descriptorRaw,
 				descriptorParsed: data.descriptorParsed
 			},
-			'completed'
+			'completed',
+			user.workflow_state
 		);
 
 		throw redirect(303, '/ceremony/dashboard');

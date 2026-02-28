@@ -41,9 +41,12 @@
 				{/each}
 			</nav>
 		{/if}
-		<form method="POST" action="/auth/logout">
-			<button type="submit" class="logout-btn">Log out</button>
-		</form>
+		<div class="header-actions">
+			<a href="/settings" class="settings-link">Settings</a>
+			<form method="POST" action="/auth/logout">
+				<button type="submit" class="logout-btn">Log out</button>
+			</form>
+		</div>
 	</header>
 
 	<main class="wizard-content">
@@ -72,6 +75,26 @@
 		display: flex;
 		gap: 0.5rem;
 		flex-wrap: wrap;
+	}
+
+	.header-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.settings-link {
+		font-size: 0.75rem;
+		color: var(--text-muted);
+		text-decoration: none;
+		padding: 0.375rem 0.75rem;
+		border: 1px solid var(--border);
+		border-radius: 0.375rem;
+	}
+
+	.settings-link:hover {
+		color: var(--accent);
+		border-color: var(--accent);
 	}
 
 	.logout-btn {

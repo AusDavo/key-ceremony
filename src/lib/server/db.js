@@ -122,6 +122,14 @@ export const updateCredentialCounter = db.prepare(`
   UPDATE passkey_credentials SET counter = ? WHERE credential_id = ?
 `);
 
+export const deleteCredential = db.prepare(`
+  DELETE FROM passkey_credentials WHERE credential_id = ? AND user_id = ?
+`);
+
+export const countCredentialsByUser = db.prepare(`
+  SELECT COUNT(*) as count FROM passkey_credentials WHERE user_id = ?
+`);
+
 // Ceremonies
 export const insertCeremony = db.prepare(`
   INSERT INTO ceremonies (ceremony_id, user_id, ceremony_date, descriptor_hash, quorum_required, quorum_total, quorum_achieved, document_hash)
