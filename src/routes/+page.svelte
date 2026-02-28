@@ -97,6 +97,10 @@
 		</div>
 	</div>
 
+	<div class="privacy">
+		<p>Never asks for seed phrases or private keys. All data encrypted at rest (AES-256-GCM). Vault entries use zero-knowledge encryption — the server cannot decrypt them. No tracking, no analytics, no third-party scripts. <a href="https://github.com/AusDavo/key-ceremony">Open source</a> and self-hostable.</p>
+	</div>
+
 	<div class="features">
 		<a href="/verify">Verify an existing ceremony record</a>
 	</div>
@@ -189,6 +193,31 @@
 		.steps {
 			flex-direction: column;
 		}
+	}
+
+	.privacy {
+		padding: 1rem 1.25rem;
+		background: var(--bg-surface);
+		border: 1px solid var(--border);
+		border-radius: 0.5rem;
+		margin-bottom: 2rem;
+		text-align: left;
+	}
+
+	.privacy p {
+		font-size: 0.8rem;
+		color: var(--text-dim);
+		line-height: 1.6;
+		margin: 0;
+	}
+
+	.privacy a {
+		color: var(--text-muted);
+		text-decoration: underline;
+	}
+
+	.privacy a:hover {
+		color: var(--accent);
 	}
 
 	.features {

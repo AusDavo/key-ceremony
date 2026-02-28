@@ -178,6 +178,16 @@ Tested with:
 
 Any wallet that supports BIP-137 or BIP-322 message signing should work.
 
+## Security model
+
+**Server sees during your session:** wallet output descriptor (for parsing and address derivation), key holder details (for PDF generation), signatures (for verification).
+
+**Server stores at rest:** all workflow data encrypted with AES-256-GCM using a server-side key; vault entries encrypted with WebAuthn PRF (key derived in the browser — server stores only ciphertext and cannot decrypt).
+
+**Server never sees:** seed phrases, private keys, vault plaintext.
+
+**For maximum privacy:** self-host the application, and delete your account after downloading your ceremony PDF.
+
 ## Related projects
 
 - **[CertainKey](https://app.certainkey.dpinkerton.com)** — Audit-ready Bitcoin proof-of-reserves reports for SMSFs and institutions

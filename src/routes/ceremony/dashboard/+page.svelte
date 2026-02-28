@@ -44,7 +44,7 @@
 </div>
 
 <div class="purge-notice">
-	<p>Your ceremony data is stored encrypted on the server. You can start a new ceremony at any time, which will clear the current data. Save your PDF for your records.</p>
+	<p>Your ceremony data is encrypted at rest on the server (AES-256-GCM). Vault entries use zero-knowledge encryption — the server cannot decrypt them. You can <a href="/settings">delete your account</a> and all data from Settings at any time.</p>
 </div>
 
 <div class="actions">
@@ -156,6 +156,15 @@
 		margin-bottom: 1.5rem;
 		font-size: 0.875rem;
 		color: var(--text-muted);
+	}
+
+	.purge-notice a {
+		color: var(--text);
+		text-decoration: underline;
+	}
+
+	.purge-notice a:hover {
+		color: var(--accent);
 	}
 
 	.actions {
