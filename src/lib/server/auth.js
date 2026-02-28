@@ -9,7 +9,6 @@ import {
 	createUser,
 	getUser,
 	addCredential,
-	getCredentialsByUser,
 	getCredentialById,
 	updateCredentialCounter,
 	setPurgeAfter,
@@ -194,68 +193,3 @@ export async function finishLogin(sessionId, response) {
 	return { verified: true, userId: stored.user_id, credentialId };
 }
 
-/**
- * Generate options to add an additional passkey to an existing user.
- */
-export async function startAddPasskey(sessionId, userId) {
-	const existingCredentials = getCredentialsByUser.all(userId);
-
-	const options = await generateRegistrationOptions({
-		rpName: RP_NAME,
-		rpID: RP_ID,
-		userName: generateDisplayName(),
-		userID: new TextEncoder().encode(userId),
-		attestationType: 'none',
-		excludeCredentials: existingCredentials.map((c) => ({
-			id: c.credential_id,
-			transports: JSON.parse(c.transports || '[]')
-		})),
-		authenticatorSelection: {
-			residentKey: 'required',
-			userVerification: 'preferred'
-		},
-		extensions: {
-			prf: {}
-		}
-	});
-
-	storeChallenge(sessionId, options.challenge);
-
-	return { options };
-}
-
-/**
- * Verify and add an additional passkey for an existing user.
- * Accepts optional wrappedDek/dekIv for the new credential's wrapped DEK.
- */
-export async function finishAddPasskey(sessionId, userId, response, dekData) {
-	const expectedChallenge = getChallenge(sessionId);
-	if (!expectedChallenge) {
-		throw new Error('Challenge expired or not found');
-	}
-
-	const verification = await verifyRegistrationResponse({
-		response,
-		expectedChallenge,
-		expectedOrigin: RP_ORIGIN,
-		expectedRPID: RP_ID
-	});
-
-	if (!verification.verified || !verification.registrationInfo) {
-		throw new Error('Passkey registration verification failed');
-	}
-
-	const { credential } = verification.registrationInfo;
-
-	addCredential.run(
-		credential.id,
-		userId,
-		Buffer.from(credential.publicKey),
-		credential.counter,
-		JSON.stringify(credential.transports || []),
-		dekData?.wrappedDek ? Buffer.from(dekData.wrappedDek, 'base64') : null,
-		dekData?.dekIv || null
-	);
-
-	return { verified: true };
-}

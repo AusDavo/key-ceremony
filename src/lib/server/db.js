@@ -125,13 +125,6 @@ export const updateCredentialCounter = db.prepare(`
   UPDATE passkey_credentials SET counter = ? WHERE credential_id = ?
 `);
 
-export const deleteCredential = db.prepare(`
-  DELETE FROM passkey_credentials WHERE credential_id = ? AND user_id = ?
-`);
-
-export const countCredentialsByUser = db.prepare(`
-  SELECT COUNT(*) as count FROM passkey_credentials WHERE user_id = ?
-`);
 
 export const getCredentialDek = db.prepare(`
   SELECT encrypted_dek, dek_iv FROM passkey_credentials WHERE credential_id = ?
