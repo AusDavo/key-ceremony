@@ -61,12 +61,12 @@
 			}
 
 			// Now derive the encryption key
-			status = 'Setting up encryption...';
-
 			let prfOutput = prfResult.results?.first;
 
-			// If PRF output wasn't available at registration, authenticate to get it
+			// If PRF output wasn't available at registration (e.g. YubiKeys),
+			// authenticate to get it — requires a second touch
 			if (!prfOutput) {
+				status = 'Touch your key again to set up encryption...';
 				prfOutput = await authenticateForPrf(credential.id);
 			}
 
