@@ -1,5 +1,5 @@
 import { error, fail } from '@sveltejs/kit';
-import { getSigningToken, getUser } from '$lib/server/db.js';
+import { getHashedToken, getUser } from '$lib/server/db.js';
 import { getWorkflowData, saveWorkflowData } from '$lib/server/workflow.js';
 import { validateSignature, deriveAddress } from '$lib/server/bitcoin-utils.js';
 
@@ -15,7 +15,7 @@ function extractSignature(raw) {
 }
 
 export function load({ params }) {
-	const tokenRow = getSigningToken.get(params.token);
+	const tokenRow = getHashedToken(params.token);
 	if (!tokenRow) {
 		throw error(404, 'This signing link is invalid or has expired.');
 	}
@@ -68,14 +68,14 @@ export function load({ params }) {
 		defaultKeyType,
 		defaultAddress,
 		keyTypes,
-		xpubRaw: xpub.xpub,
+		token: params.token,
 		alreadySigned
 	};
 }
 
 export const actions = {
 	default: async ({ params, request }) => {
-		const tokenRow = getSigningToken.get(params.token);
+		const tokenRow = getHashedToken(params.token);
 		if (!tokenRow) {
 			return fail(400, { error: 'This signing link is invalid or has expired.' });
 		}

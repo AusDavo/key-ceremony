@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { getWorkflowData } from '$lib/server/workflow.js';
+import { cleanupBuild } from '$lib/server/report-generator.js';
 
 export function GET({ locals }) {
 	const { user } = locals;
@@ -21,6 +22,8 @@ export function GET({ locals }) {
 	} catch {
 		throw error(404, 'Ceremony record file not found. It may have been cleaned up.');
 	}
+
+	cleanupBuild(data.ceremonyBuildDir);
 
 	return new Response(pdfBuffer, {
 		headers: {

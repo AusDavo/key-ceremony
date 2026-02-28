@@ -3,7 +3,7 @@ import { randomBytes } from 'crypto';
 import { getWorkflowData, saveWorkflowData, canAccessStep } from '$lib/server/workflow.js';
 import { buildSigningChallenge } from '$lib/server/electrs-client.js';
 import { validateSignature, deriveAddress } from '$lib/server/bitcoin-utils.js';
-import { insertSigningToken } from '$lib/server/db.js';
+import { insertHashedToken } from '$lib/server/db.js';
 
 const ADDR_TYPE_MAP = {
 	wsh: 'segwit', 'sh-wsh': 'segwit-wrapped', sh: 'legacy',
@@ -150,7 +150,7 @@ export const actions = {
 		if (!token) {
 			token = randomBytes(24).toString('hex');
 			shareTokens[xpubIndex] = token;
-			insertSigningToken.run(token, user.user_id, xpubIndex);
+			insertHashedToken(token, user.user_id, xpubIndex);
 			saveWorkflowData(user.user_id, data, { shareTokens });
 		}
 

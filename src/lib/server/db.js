@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import { join, dirname } from 'path';
 import { mkdirSync } from 'fs';
 import { fileURLToPath } from 'url';
+import { createHash } from 'crypto';
 import { env } from '$env/dynamic/private';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -145,13 +146,25 @@ export const getCeremonyById = db.prepare(`
 `);
 
 // Signing tokens
-export const insertSigningToken = db.prepare(`
+function hashToken(rawToken) {
+	return createHash('sha256').update(rawToken).digest('hex');
+}
+
+const _insertSigningToken = db.prepare(`
   INSERT OR REPLACE INTO signing_tokens (token, user_id, xpub_index) VALUES (?, ?, ?)
 `);
 
-export const getSigningToken = db.prepare(`
-  SELECT * FROM signing_tokens WHERE token = ?
+export function insertHashedToken(rawToken, userId, xpubIndex) {
+	return _insertSigningToken.run(hashToken(rawToken), userId, xpubIndex);
+}
+
+const _getSigningToken = db.prepare(`
+  SELECT * FROM signing_tokens WHERE token = ? AND created_at > datetime('now', '-1 day')
 `);
+
+export function getHashedToken(rawToken) {
+	return _getSigningToken.get(hashToken(rawToken));
+}
 
 export const deleteSigningTokensForUser = db.prepare(`
   DELETE FROM signing_tokens WHERE user_id = ?

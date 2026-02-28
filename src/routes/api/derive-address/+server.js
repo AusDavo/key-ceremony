@@ -1,14 +1,28 @@
 import { json } from '@sveltejs/kit';
 import { getWorkflowData } from '$lib/server/workflow.js';
 import { deriveAddress } from '$lib/server/bitcoin-utils.js';
+import { getHashedToken, getUser } from '$lib/server/db.js';
 
 export async function POST({ request, locals }) {
-	const { xpubIndex, xpub: rawXpub, derivationPath, keyType } = await request.json();
+	const { xpubIndex, token, derivationPath, keyType } = await request.json();
 
 	let xpubStr;
-	if (rawXpub) {
-		// Direct xpub — used by shared signing page (no auth required)
-		xpubStr = rawXpub;
+	if (token) {
+		// Token-based — used by shared signing page (no auth required)
+		const tokenRow = getHashedToken(token);
+		if (!tokenRow) {
+			return json({ error: 'Invalid or expired signing token' }, { status: 400 });
+		}
+		const user = getUser.get(tokenRow.user_id);
+		if (!user) {
+			return json({ error: 'Invalid signing token' }, { status: 400 });
+		}
+		const data = getWorkflowData(user);
+		const parsed = data.descriptorParsed;
+		if (!parsed?.xpubs[tokenRow.xpub_index]) {
+			return json({ error: 'Invalid key reference' }, { status: 400 });
+		}
+		xpubStr = parsed.xpubs[tokenRow.xpub_index].xpub;
 	} else {
 		// Index-based — requires auth
 		const user = locals.user;
