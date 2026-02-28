@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Key Ceremony Record — Blank Template</title>
+<style>
+  :root {
+    --accent: #F7931A;
+    --text: #1a1a1a;
+    --text-muted: #666;
+    --border: #ccc;
+    --bg-light: #f8f8f8;
+    --line: #999;
+  }
+
+  @page {
+    size: A4;
+    margin: 16mm 16mm 18mm 16mm;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 9.5pt;
+    line-height: 1.45;
+    color: var(--text);
+  }
+
+  .page-break {
+    page-break-before: always;
+    padding-top: 4mm;
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 2mm;
+    margin-bottom: 4mm;
+    border-bottom: 2px solid var(--accent);
+  }
+
+  .page-header .title {
+    font-size: 10pt;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .page-header .ref {
+    font-size: 8.5pt;
+    color: var(--text-muted);
+  }
+
+  /* Cover page */
+  .cover {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 85vh;
+    text-align: center;
+  }
+
+  .cover h1 {
+    font-size: 28pt;
+    color: var(--accent);
+    margin-bottom: 3mm;
+    letter-spacing: -0.5px;
+  }
+
+  .cover .subtitle {
+    font-size: 14pt;
+    color: var(--text-muted);
+    margin-bottom: 14mm;
+  }
+
+  .cover-fields {
+    width: 75%;
+    text-align: left;
+  }
+
+  .cover-field {
+    display: flex;
+    align-items: baseline;
+    margin-bottom: 7mm;
+  }
+
+  .cover-field .label {
+    width: 130px;
+    flex-shrink: 0;
+    font-size: 9pt;
+    color: var(--text-muted);
+  }
+
+  .cover-field .line {
+    flex: 1;
+    border-bottom: 1px solid var(--line);
+    min-height: 1.4em;
+  }
+
+  .cover-footer {
+    margin-top: 16mm;
+    font-size: 8pt;
+    color: var(--text-muted);
+  }
+
+  /* Section headings */
+  h2 {
+    font-size: 14pt;
+    color: var(--accent);
+    margin-bottom: 3mm;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.5mm;
+  }
+
+  h3 {
+    font-size: 10pt;
+    color: var(--text);
+    margin: 4mm 0 1.5mm;
+  }
+
+  p.hint {
+    font-size: 8pt;
+    color: var(--text-muted);
+    margin-bottom: 3mm;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2mm 0 3mm;
+    font-size: 8.5pt;
+  }
+
+  th {
+    background: var(--bg-light);
+    border: 1px solid var(--border);
+    padding: 2mm 2.5mm;
+    text-align: left;
+    font-size: 7.5pt;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  td {
+    border: 1px solid var(--border);
+    padding: 2mm 2.5mm;
+    vertical-align: top;
+  }
+
+  td.write-in {
+    height: 9mm;
+  }
+
+  /* Labelled write-in fields */
+  .field-group {
+    margin-bottom: 3mm;
+  }
+
+  .field-label {
+    font-size: 8.5pt;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 0.5mm;
+  }
+
+  .field-lines {
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 2mm 3mm;
+  }
+
+  .field-lines .ruled-line {
+    border-bottom: 1px solid #e0e0e0;
+    height: 7mm;
+  }
+
+  .field-lines .ruled-line:last-child {
+    border-bottom: none;
+  }
+
+  /* Inline write-in */
+  .inline-field {
+    display: flex;
+    align-items: baseline;
+    margin-bottom: 3mm;
+  }
+
+  .inline-field .label {
+    width: 130px;
+    flex-shrink: 0;
+    font-size: 8.5pt;
+    color: var(--text-muted);
+  }
+
+  .inline-field .line {
+    flex: 1;
+    border-bottom: 1px solid var(--line);
+    min-height: 1.3em;
+  }
+
+  /* Checkbox */
+  .check-row {
+    display: flex;
+    align-items: center;
+    gap: 2mm;
+    margin-bottom: 1.5mm;
+    font-size: 8.5pt;
+  }
+
+  .checkbox {
+    width: 3.5mm;
+    height: 3.5mm;
+    border: 1px solid var(--text);
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  /* Footer */
+  .doc-footer {
+    margin-top: 6mm;
+    padding-top: 2mm;
+    border-top: 1px solid var(--border);
+    font-size: 7pt;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  .no-break {
+    page-break-inside: avoid;
+  }
+
+  .tip {
+    background: #fffbeb;
+    border: 1px solid #f5d67b;
+    border-radius: 3px;
+    padding: 2mm 3mm;
+    font-size: 8pt;
+    color: #92600a;
+    margin: 3mm 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- Page 1: Cover -->
+<div class="cover">
+  <h1>Key Ceremony Record</h1>
+  <p class="subtitle">Bitcoin Multisig Wallet Documentation</p>
+
+  <div class="cover-fields">
+    <div class="cover-field">
+      <span class="label">Date</span>
+      <span class="line"></span>
+    </div>
+    <div class="cover-field">
+      <span class="label">Wallet Type</span>
+      <span class="line"></span>
+    </div>
+    <div class="cover-field">
+      <span class="label">Quorum</span>
+      <span class="line"></span>
+    </div>
+    <div class="cover-field">
+      <span class="label">Network</span>
+      <span class="line"></span>
+    </div>
+    <div class="cover-field">
+      <span class="label">Descriptor Hash</span>
+      <span class="line"></span>
+    </div>
+    <div class="cover-field">
+      <span class="label">Prepared by</span>
+      <span class="line"></span>
+    </div>
+  </div>
+
+  <p class="cover-footer">Blank template &mdash; keyceremony.com</p>
+</div>
+
+<!-- Page 2: Key Holders -->
+<div class="page-break">
+  <div class="page-header">
+    <span class="title">Key Ceremony Record</span>
+    <span class="ref">Blank Template</span>
+  </div>
+
+  <h2>Key Holders</h2>
+  <p class="hint">Record details for each key in the wallet. Use the fingerprint from your wallet software (first 8 hex characters of the master key fingerprint).</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:18%">Fingerprint</th>
+        <th style="width:20%">Name</th>
+        <th style="width:18%">Role</th>
+        <th style="width:18%">Device</th>
+        <th style="width:13%">Verified</th>
+        <th style="width:13%">Signature</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td></tr>
+      <tr><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td></tr>
+      <tr><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td></tr>
+      <tr><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td></tr>
+      <tr><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td></tr>
+    </tbody>
+  </table>
+
+  <div class="tip">
+    <strong>Roles:</strong> Primary Holder, Trustee, Spouse/Partner, Backup, Accountant, Legal Counsel, or any description that fits.
+    <strong>Devices:</strong> Coldcard, SeedSigner, Ledger, Trezor, BitBox, Keystone, Jade, Passport, etc.
+  </div>
+
+  <h3>Device &amp; Seed Storage Locations</h3>
+  <p class="hint">For each key, record where the signing device and seed backup are physically stored.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:18%">Fingerprint</th>
+        <th style="width:41%">Device Location</th>
+        <th style="width:41%">Seed Backup Location</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td></tr>
+      <tr><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td></tr>
+      <tr><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td></tr>
+      <tr><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td></tr>
+      <tr><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Page 3: Recovery Procedure -->
+<div class="page-break">
+  <div class="page-header">
+    <span class="title">Key Ceremony Record</span>
+    <span class="ref">Blank Template</span>
+  </div>
+
+  <h2>Recovery Procedure</h2>
+  <p class="hint">Document everything needed to reconstruct this wallet in an emergency. Someone unfamiliar with your setup should be able to follow these instructions.</p>
+
+  <div class="field-group">
+    <div class="field-label">Recommended Wallet Software</div>
+    <div class="field-lines">
+      <div class="ruled-line"></div>
+    </div>
+  </div>
+
+  <div class="field-group">
+    <div class="field-label">Descriptor Storage Location(s)</div>
+    <div class="field-lines">
+      <div class="ruled-line"></div>
+      <div class="ruled-line"></div>
+    </div>
+  </div>
+
+  <div class="field-group">
+    <div class="field-label">Step-by-Step Recovery Instructions</div>
+    <div class="field-lines">
+      <div class="ruled-line"></div>
+      <div class="ruled-line"></div>
+      <div class="ruled-line"></div>
+      <div class="ruled-line"></div>
+      <div class="ruled-line"></div>
+      <div class="ruled-line"></div>
+      <div class="ruled-line"></div>
+      <div class="ruled-line"></div>
+      <div class="ruled-line"></div>
+      <div class="ruled-line"></div>
+    </div>
+  </div>
+
+  <div class="field-group">
+    <div class="field-label">Emergency Contacts</div>
+    <div class="field-lines">
+      <div class="ruled-line"></div>
+      <div class="ruled-line"></div>
+      <div class="ruled-line"></div>
+    </div>
+  </div>
+
+  <div class="field-group">
+    <div class="field-label">Additional Notes</div>
+    <div class="field-lines">
+      <div class="ruled-line"></div>
+      <div class="ruled-line"></div>
+      <div class="ruled-line"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Page 4: Technical Appendix -->
+<div class="page-break">
+  <div class="page-header">
+    <span class="title">Key Ceremony Record</span>
+    <span class="ref">Blank Template</span>
+  </div>
+
+  <h2>Technical Appendix</h2>
+  <p class="hint">Record the derivation path for each key. Do NOT write full xpubs here unless this document will be stored with the same security as your seed phrases.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:8%">#</th>
+        <th style="width:22%">Fingerprint</th>
+        <th style="width:40%">Derivation Path</th>
+        <th style="width:30%">Key Type</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="write-in">1</td><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td></tr>
+      <tr><td class="write-in">2</td><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td></tr>
+      <tr><td class="write-in">3</td><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td></tr>
+      <tr><td class="write-in">4</td><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td></tr>
+      <tr><td class="write-in">5</td><td class="write-in"></td><td class="write-in"></td><td class="write-in"></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Descriptor Hash</h3>
+  <p class="hint">The SHA-256 hash of your output descriptor. Compute with: <code style="font-size:7.5pt; background:var(--bg-light); padding:0.5mm 1.5mm; border-radius:2px;">echo -n "your descriptor" | sha256sum</code></p>
+
+  <div class="inline-field">
+    <span class="label">SHA-256</span>
+    <span class="line"></span>
+  </div>
+
+  <h3 style="margin-top: 6mm;">Checklist</h3>
+
+  <div class="check-row"><span class="checkbox"></span> All key holders identified and recorded</div>
+  <div class="check-row"><span class="checkbox"></span> Key holders verified (signed challenge message)</div>
+  <div class="check-row"><span class="checkbox"></span> Device and seed backup locations documented</div>
+  <div class="check-row"><span class="checkbox"></span> Recovery instructions written and tested</div>
+  <div class="check-row"><span class="checkbox"></span> Output descriptor backed up separately</div>
+  <div class="check-row"><span class="checkbox"></span> Emergency contacts informed of their role</div>
+  <div class="check-row"><span class="checkbox"></span> This document stored securely</div>
+
+  <div class="tip" style="margin-top: 5mm;">
+    <strong>Security reminder:</strong> This document contains sensitive information about your wallet setup. Store it with the same care as your seed phrases. Consider keeping copies in separate secure locations.
+  </div>
+
+  <div class="doc-footer">
+    Key Ceremony Record &mdash; Blank Template &mdash; keyceremony.com
+  </div>
+</div>
+
+</body>
+</html>

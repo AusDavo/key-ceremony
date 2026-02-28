@@ -103,6 +103,8 @@
 
 	<div class="features">
 		<a href="/verify">Verify an existing ceremony record</a>
+		<span class="sep">&middot;</span>
+		<a href="/key-ceremony-blank-template.pdf">Download blank template (PDF)</a>
 	</div>
 
 	<div class="auth-buttons">
@@ -232,6 +234,11 @@
 
 	.features a:hover {
 		color: var(--accent);
+	}
+
+	.features .sep {
+		color: var(--border);
+		margin: 0 0.25rem;
 	}
 
 	.auth-buttons {
